@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chord Progression Ear Trainer</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="text-center mb-4">Chord Progression Ear Trainer</h1>
+
+        <!-- Setup Section -->
+        <div id="setup-section" class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Configuration</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Select the chord progressions you want to practice:</p>
+                <div id="progression-list" class="mb-3">
+                    <!-- Checkboxes will be injected here -->
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="btn-select-all" class="btn btn-outline-secondary btn-sm">Select All</button>
+                    <button id="btn-deselect-all" class="btn btn-outline-secondary btn-sm">Deselect All</button>
+                </div>
+                <hr>
+                <button id="btn-start-game" class="btn btn-primary w-100">Start Training</button>
+            </div>
+        </div>
+
+        <!-- Game Section (Hidden initially) -->
+        <div id="game-section" class="d-none">
+            <!-- Controls -->
+            <div class="card mb-4">
+                <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="btn-group">
+                        <button id="btn-play" class="btn btn-success">
+                            <span class="d-none d-sm-inline">Play Progression</span>
+                            <span class="d-inline d-sm-none">Play</span>
+                        </button>
+                        <button id="btn-stop" class="btn btn-danger">Stop</button>
+                    </div>
+
+                    <div class="d-flex gap-3 align-items-center">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="toggle-loop">
+                            <label class="form-check-label" for="toggle-loop">Loop</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="toggle-bass">
+                            <label class="form-check-label" for="toggle-bass">Bass</label>
+                        </div>
+                    </div>
+
+                    <button id="btn-settings" class="btn btn-outline-secondary">Settings</button>
+                </div>
+            </div>
+
+            <!-- Interaction Area -->
+            <div class="card mb-4 text-center">
+                <div class="card-body">
+                    <h4 id="status-text" class="mb-4 text-muted">Press Play to start</h4>
+                    <div id="answer-buttons" class="d-grid gap-2 d-sm-flex justify-content-sm-center flex-wrap mb-4">
+                        <!-- Answer buttons injected here -->
+                    </div>
+                    <div id="feedback-area" class="alert d-none" role="alert"></div>
+                    <button id="btn-next" class="btn btn-primary btn-lg px-5 d-none">Next Progression</button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="card">
+                <div class="card-body d-flex justify-content-around text-center">
+                    <div>
+                        <h6 class="text-muted">Total</h6>
+                        <span id="stat-total" class="h4">0</span>
+                    </div>
+                    <div>
+                        <h6 class="text-muted">Correct</h6>
+                        <span id="stat-correct" class="h4 text-success">0</span>
+                    </div>
+                    <div>
+                        <h6 class="text-muted">Accuracy</h6>
+                        <span id="stat-accuracy" class="h4">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="tone.js"></script>
+    <script src="bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
