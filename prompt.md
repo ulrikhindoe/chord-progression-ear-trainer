@@ -2,6 +2,8 @@
 
 I want to build an app to train recoqnizing chord progressions.
 
+The project includes four main files: `index.html`, `script.js` and `styles.css`.
+
 ## Tech Stack
 - **Language**: JavaScript (React or Vanilla JS).
 - **Audio Library**: Tone.js (preferred for scheduling and synthesis).
