@@ -1,36 +1,56 @@
-
-# Prompt for AI
+# Chord Progression Ear Trainer App Specification
 
 I want to build an app to train recoqnizing chord progressions.
 
-The app is configured with a list of chord progressions. Could be something like this example:
+## Tech Stack
+- **Language**: JavaScript (React or Vanilla JS).
+- **Audio Library**: Tone.js (preferred for scheduling and synthesis).
+- **Styling**: Bootstrap for responsive design (`bootstrap.min.css`, `bootstrap.bundle.min.js`).
 
-let chordProgressions = [
+## Data Structure
+The app is configured with a list of chord progressions using Roman Numeral analysis.
+
+```javascript
+const chordProgressions = [
     {
         "name": "i V",
         "chords": ["i", "V"]
     },
-        {
+    {
         "name": "i bVI bIII bVII - Vivir mi vida",
         "chords": ["i", "bVI", "bIII", "bVII"]
     },
 ]
+```
 
-These chord progressions are listed in the app and I can select a subset I want to use for the training.
+## Core Features
 
-There is a button for each progression and when a progression is played I can select the one I think it is.
+### 1. Setup & Configuration
+- Display a list of all available chord progressions with checkboxes.
+- Allow the user to select a subset of progressions to train on.
+- Option to set the number of progressions in the exercise (or continuous mode).
 
-The chords are all triads and can be played randomly in any inversion.
+### 2. Playback Logic
+- **Library**: Use Tone.js PolySynth.
+- **Key**: Pick one the the twelve keys randomly
+- **Chord Generation**:
+  - Parse Roman numerals (e.g., "bVI" -> Flat 6 Major).
+  - Chords are triads (Root, 3rd, 5th).
+  - **Inversions**: Randomly select an inversion (Root, 1st, 2nd) for the chord.
+  - **Voice Leading**: Ideally, keep chords close to each other in pitch, but random inversions are acceptable as per requirements.
+- **Playback Options**:
+  - **Loop**: Toggle to loop the progression. If looping, keep the specific generated inversions constant for all rounds.
+  - **Bass**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony.
+- **Controls**: Play and Stop buttons.
 
-On the page there are some options on how the progression is played:
-- Loop the progression. In this case the same inversions are used for each repetition.
-- Play an additional root note in a lower octave so it serves as a bass
+### 3. Interaction & Game Loop
+- When a progression plays, display buttons corresponding to the *selected* progressions.
+- User clicks the button they think matches the progression played.
+- Provide immediate visual feedback (Correct/Incorrect).
+- Auto-play next or wait for "Next" click (decide on best UX).
 
-There should be buttons to Play and Stop the exercise.
-
-It should be possible to choose how many chord progressions are in the exercise.
-
-Show statistics on how many progressions have been played and the number of correctly identified ones. Also show the percentage of the correctly identified ones.
-
-
-
+### 4. Statistics
+- Display:
+  - Total progressions played.
+  - Number correctly identified.
+  - Accuracy percentage.
