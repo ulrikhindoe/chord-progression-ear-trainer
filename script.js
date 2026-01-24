@@ -1,6 +1,9 @@
 // Data Structure
 const chordProgressions = [
     { name: "i V", chords: ["i", "V"] },
+    { name: "i iv", chords: ["i", "iv"] },
+    { name: "I V", chords: ["I", "V"] },
+    { name: "I IV", chords: ["I", "IV"] },
     { name: "i bVI bIII bVII", chords: ["i", "bVI", "bIII", "bVII"] },
     { name: "I IV V I", chords: ["I", "IV", "V", "I"] },
     { name: "ii V I", chords: ["ii", "V", "I"] },
