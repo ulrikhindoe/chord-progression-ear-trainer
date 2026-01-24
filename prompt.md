@@ -48,8 +48,36 @@ const chordProgressions = [
   - **Bass**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony.
 - **Controls**: Play and Stop buttons.
 
-### 3. Interaction & Game Loop
-- There are two views: Training and Settings
+### 3. Views
+
+There are two views in the app: Training and Settings. When the app is started the Training view is displayed.
+
+#### 3.1 Training View
+- "Settings" button to go to Settings
+- Control section
+  - "Play" button to play the current progression
+  - "Stop" button to stop the current progression in case it is looping
+  - "Reset" to clear statistics and start the execise over
+- Chords section
+  - There is a button for each chord in the progression labelled 1,2,3...
+  - When pressing a chord button the related chord is played.
+- Progression choice section
+  - There is a button for each of the progression in the excersize
+  - If the correct progression is pressed the button will turn green
+  - If an incorrect progression is pressed the button will turn red and the correct progression will turn green
+- Statistics section
+
+#### 3.2 Settings View
+- Select progressions to train on
+  - All progresssions defined
+  - "Select all" and "Deselect all" buttons
+- Options
+  - Loop Progression
+  - Add Bass Note
+- "Training" button to go to Training
+
+
+### 4. Interaction & Game Loop
 - You go from Settings to Training by pressing a "Start training" button.
 - You go from Training to Settings by pressing a "Settings" button.
 - In settings you choose the subset of progressions to train on. You also have the option to add a bass note and the option to keep looping the progression
@@ -59,7 +87,7 @@ const chordProgressions = [
 - Wait for "Next" click.
 - If the "Play progression" is pressed again the same progression with the same inversions should be played.
 
-### 4. Statistics
+### 5. Statistics
 - Display:
   - Total progressions played.
   - Number correctly identified.
