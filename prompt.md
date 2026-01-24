@@ -46,6 +46,7 @@ const chordProgressions = [
 - **Playback Options**:
   - **Loop**: Toggle to loop the progression. If looping, keep the specific generated inversions constant for all rounds.
   - **Bass**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony.
+  - **Tempo**: Adjustable playback speed (BPM).
 - **Controls**: Play and Stop buttons.
 
 ### 3. Views
@@ -57,23 +58,25 @@ There are two views in the app: Training and Settings. When the app is started t
 - Control section
   - "Play" button to play the current progression
   - "Stop" button to stop the current progression in case it is looping
-  - "Reset" to clear statistics and start the execise over
+  - "Reset" to clear statistics and start the exercise over
+  - "Next" button to proceed to the next progression (visible after answering)
 - Chords section
   - There is a button for each chord in the progression labelled 1,2,3...
   - When pressing a chord button the related chord is played.
 - Progression choice section
-  - There is a button for each of the progression in the excersize
+  - There is a button for each of the progression in the exercise
   - If the correct progression is pressed the button will turn green
   - If an incorrect progression is pressed the button will turn red and the correct progression will turn green
 - Statistics section
 
 #### 3.2 Settings View
 - Select progressions to train on
-  - All progresssions defined
+  - All progressions defined
   - "Select all" and "Deselect all" buttons
 - Options
   - Loop Progression
   - Add Bass Note
+  - Tempo Slider (BPM)
 - "Training" button to go to Training
 
 
