@@ -1,11 +1,11 @@
 # Chord Progression Ear Trainer App Specification
 
-I want to build an app to train recoqnizing chord progressions.
+I want to build an app to train recognizing chord progressions.
 
 The project includes four main files: `index.html`, `script.js` and `styles.css`.
 
 ## Tech Stack
-- **Language**: JavaScript (React or Vanilla JS).
+- **Language**: JavaScript (Vanilla JS).
 - **Audio Library**: Tone.js (preferred for scheduling and synthesis).
 - **Styling**: Bootstrap for responsive design (`bootstrap.min.css`, `bootstrap.bundle.min.js`). These files are already present.
 
@@ -37,7 +37,7 @@ const chordProgressions = [
 
 ### 2. Playback Logic
 - **Library**: Use Tone.js PolySynth.
-- **Key**: Pick one the the twelve keys randomly
+- **Key**: Pick one of the twelve keys randomly.
 - **Chord Generation**:
   - Parse Roman numerals (e.g., "bVI" -> Flat 6 Major).
   - Chords are triads (Root, 3rd, 5th).
