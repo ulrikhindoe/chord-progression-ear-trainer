@@ -54,22 +54,30 @@ const chordProgressions = [
 There are two views in the app: Training and Settings. When the app is started the Training view is displayed.
 
 #### 3.1 Training View
-- "Settings" button to go to Settings
+
+- Top section
+  - To the left
+    - Statistics shown like this: "Correct: 3/4 (75%)" followed by a link "reset" that will reset the statistics
+  - To the right
+    - "Settings" button to go to Settings
 - Control section
   - Button named "Play" to play the current progression
-  - Button named "Stop" to stop the current progression in case it is looping. The button is only shown if looping is selected.
-  - Button named "Next" to proceed to the next progression (visible after answering). Play this new progression immediately
+    - Must always be shown
+  - Button named "Stop" to stop the current progression.
+    - The button is only shown if looping is selected.
+  - Button named "Next" to proceed to the next progression
+    - Enabled after answering
+    - Disabled when it is pressed
+    - When pressed play the next progression immediately
 - Chords section
   - There is a button for each chord in the progression labelled 1,2,3...
   - When a chord is played the corresponding button is highlighted
   - When pressing a chord button the related chord is played as long the button is pressed
 - Progression choice section
   - There is a button for each of the progression in the exercise
+  - The width of the button should be adjusted to fit the text in the button
   - If the correct progression is pressed the button will turn green
   - If an incorrect progression is pressed the button will turn red and the correct progression will turn green
-- Statistics section
-  - Example: "Correct: 3/4 (75%)"
-  - Small button or link to reset statistics
 
 #### 3.2 Settings View
 - Select progressions to train on
