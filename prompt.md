@@ -63,6 +63,7 @@ There are two views in the app: Training and Settings. When the app is started t
 - Control section
   - Button named "Play" to play the current progression
     - Must always be shown
+    - **Must always be visible** (do not hide it when playback starts).
   - Button named "Stop" to stop the current progression.
     - The button is only shown if looping is selected.
   - Button named "Next" to proceed to the next progression
@@ -78,6 +79,7 @@ There are two views in the app: Training and Settings. When the app is started t
   - The width of the button should be adjusted to fit the text in the button
   - If the correct progression is pressed the button will turn green
   - If an incorrect progression is pressed the button will turn red and the correct progression will turn green
+  - Green and red buttons will return to the normal color when the Next button is pressed
 
 #### 3.2 Settings View
 - Select progressions to train on
