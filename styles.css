@@ -1,37 +1,24 @@
 /* /home/ulrik/projects/chord-progression-ear-trainer/styles.css */
-body {
-    min-height: 100vh;
+.chord-btn.active {
+    background-color: #ffc107; /* Warning color for highlight */
+    color: #000;
+    border-color: #ffc107;
 }
 
-.btn-progression {
-    margin: 5px;
-    min-width: 150px;
-    transition: all 0.2s;
+.choice-btn {
+    text-align: left;
+    margin-bottom: 0.5rem;
+    width: 100%;
 }
 
-.btn-chord {
-    width: 50px;
-    height: 50px;
-    font-weight: bold;
-    font-size: 1.2rem;
+.choice-btn.correct {
+    background-color: #198754 !important; /* Success */
+    border-color: #198754 !important;
+    color: white !important;
 }
 
-/* Feedback states */
-.btn-check:checked + .btn-outline-primary.correct-answer,
-.btn-outline-primary.correct-answer {
-    background-color: #198754;
-    border-color: #198754;
-    color: white;
-}
-
-.btn-check:checked + .btn-outline-primary.wrong-answer,
-.btn-outline-primary.wrong-answer {
-    background-color: #dc3545;
-    border-color: #dc3545;
-    color: white;
-}
-
-/* Disable pointer events on options after selection */
-.options-locked .btn-progression {
-    pointer-events: none;
+.choice-btn.incorrect {
+    background-color: #dc3545 !important; /* Danger */
+    border-color: #dc3545 !important;
+    color: white !important;
 }
