@@ -32,7 +32,7 @@
 
 /* Disabled state for choices after answering */
 .choice-btn:disabled {
-    opacity: 0.6;
+    opacity: 0.8;
     cursor: default;
 }
 

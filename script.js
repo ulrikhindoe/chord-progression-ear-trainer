@@ -3,7 +3,9 @@
 // --- Data ---
 const chordProgressions = [
     { name: "i V", chords: ["i", "V"] },
+    { name: "i v", chords: ["i", "v"] },
     { name: "i iv", chords: ["i", "iv"] },
+    { name: "i IV", chords: ["i", "IV"] },
     { name: "I V", chords: ["I", "V"] },
     { name: "I IV", chords: ["I", "IV"] },
     { name: "i bVI bIII bVII", chords: ["i", "bVI", "bIII", "bVII"] },
@@ -56,7 +58,8 @@ const ui = {
     containers: {
         chords: document.getElementById('chord-buttons'),
         choices: document.getElementById('progression-choices'),
-        settingsList: document.getElementById('progression-list')
+        settingsList: document.getElementById('progression-list'),
+        feedback: document.getElementById('feedback-message')
     },
     settings: {
         loop: document.getElementById('check-loop'),
@@ -136,6 +139,7 @@ function newExercise() {
     stopPlayback();
     state.hasAnswered = false;
     ui.controls.next.disabled = true;
+    ui.containers.feedback.textContent = '';
 
     // 1. Filter available progressions
     const available = state.settings.selectedIndices.map(i => chordProgressions[i]);
@@ -328,7 +332,6 @@ function stopPlayback() {
     bassSynth.triggerRelease();
 
     state.isPlaying = false;
-    ui.controls.play.classList.remove('d-none');
     ui.controls.stop.classList.add('d-none');
     clearChordHighlights();
 }
@@ -396,9 +399,13 @@ function handleGuess(selectedProgression, btnElement) {
 
     if (isCorrect) {
         btnElement.classList.add('correct');
+        ui.containers.feedback.textContent = "Correct!";
+        ui.containers.feedback.className = "mt-3 fw-bold text-success";
         state.stats.correct++;
     } else {
         btnElement.classList.add('incorrect');
+        ui.containers.feedback.textContent = "Incorrect!";
+        ui.containers.feedback.className = "mt-3 fw-bold text-danger";
         // Highlight correct answer
         const buttons = ui.containers.choices.querySelectorAll('.choice-btn');
         buttons.forEach(b => {
