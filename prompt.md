@@ -2,7 +2,7 @@
 
 I want to build an app to train recognizing chord progressions.
 
-The project includes four main files: `index.html`, `script.js` and `styles.css`.
+The project includes three main files: `index.html`, `script.js` and `styles.css`.
 
 ## Tech Stack
 - **Language**: JavaScript (Vanilla JS).
@@ -94,4 +94,4 @@ There are two views in the app: Training and Settings. When the app is started t
   - Loop Progression
   - Add Bass Note
   - Tempo Slider (BPM)
-- "Training" button to go to Training. When pressed the exercise is updated according to the nw settings but the current statistics are kept.
+- "Training" button to go to Training. When pressed the exercise is updated according to the new settings but the current statistics are kept.
