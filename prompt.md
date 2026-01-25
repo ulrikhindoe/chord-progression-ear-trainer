@@ -45,7 +45,7 @@ const chordProgressions = [
   - **Chord length**: 1.5 second
 - **Playback Options**:
   - **Loop**: Toggle to loop the progression. If looping, keep the specific generated inversions constant for all rounds.
-  - **Bass**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony. Make the bass note louder than the other chord tones (e.g. +3dB) in order to make it stand out.
+  - **Bass**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony. Make the bass note louder than the other chord tones (e.g. +2dB) in order to make it stand out.
   - **Tempo**: Adjustable playback speed (BPM).
 - **Controls**: Play and Stop buttons.
 
@@ -57,17 +57,19 @@ There are two views in the app: Training and Settings. When the app is started t
 - "Settings" button to go to Settings
 - Control section
   - Button named "Play" to play the current progression
-  - Button named "Stop" to stop the current progression in case it is looping
-  - Button named "Next" to proceed to the next progression (visible after answering)
+  - Button named "Stop" to stop the current progression in case it is looping. The button is only shown if looping is selected.
+  - Button named "Next" to proceed to the next progression (visible after answering). Play this new progression immediately
 - Chords section
   - There is a button for each chord in the progression labelled 1,2,3...
-  - When pressing a chord button the related chord is played.
+  - When a chord is played the corresponding button is highlighted
+  - When pressing a chord button the related chord is played as long the button is pressed
 - Progression choice section
   - There is a button for each of the progression in the exercise
   - If the correct progression is pressed the button will turn green
   - If an incorrect progression is pressed the button will turn red and the correct progression will turn green
 - Statistics section
-  - Small button to reset statistics
+  - Example: "Correct: 3/4 (75%)"
+  - Small button or link to reset statistics
 
 #### 3.2 Settings View
 - Select progressions to train on
@@ -77,7 +79,7 @@ There are two views in the app: Training and Settings. When the app is started t
   - Loop Progression
   - Add Bass Note
   - Tempo Slider (BPM)
-- "Start training" button to go to Training. When pressed a new exercise using the selected options is started.
+- "Training" button to go to Training. When pressed the exercise is updated according to the nw settings but the current statistics are kept.
 
 ### 4. Interaction & Game Loop
 - You go from Settings to Training by pressing a "Start training" button.
