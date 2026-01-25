@@ -1,3 +1,4 @@
+<!-- /home/ulrik/projects/chord-progression-ear-trainer/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,92 +8,87 @@
     <link rel="stylesheet" href="bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-
-    <div class="container mt-4">
-        <h1 class="text-center mb-4">Chord Progression Ear Trainer</h1>
-
-        <!-- Training View -->
-        <div id="training-view">
-            <div class="d-flex justify-content-end mb-3">
-                <button id="btn-to-settings" class="btn btn-secondary">Settings</button>
-            </div>
-
-            <!-- Statistics -->
-            <div class="card mb-4">
-                <div class="card-body d-flex justify-content-around">
-                    <span>Total: <span id="stat-total">0</span></span>
-                    <span>Correct: <span id="stat-correct">0</span></span>
-                    <span>Accuracy: <span id="stat-accuracy">0%</span></span>
-                </div>
-            </div>
-
-            <!-- Controls -->
-            <div class="text-center mb-4">
-                <button id="btn-play" class="btn btn-primary btn-lg me-2">Play Progression</button>
-                <button id="btn-stop" class="btn btn-danger btn-lg me-2">Stop</button>
-                <button id="btn-reset" class="btn btn-warning btn-lg me-2">Reset Stats</button>
-                <button id="btn-next" class="btn btn-success btn-lg d-none">Next</button>
-            </div>
-
-            <!-- Individual Chords Playback -->
-            <div class="text-center mb-4">
-                <h5>Hear Individual Chords</h5>
-                <div id="chord-buttons" class="btn-group" role="group">
-                    <!-- Buttons will be injected here -->
-                </div>
-            </div>
-
-            <!-- Progression Choices -->
-            <div id="progression-choices" class="d-grid gap-2 col-md-8 mx-auto">
-                <!-- Choice buttons will be injected here -->
-            </div>
-            <div id="feedback-message" class="text-center mt-3 fw-bold"></div>
-        </div>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1 class="text-center mb-5">Chord Progression Ear Trainer</h1>
 
         <!-- Settings View -->
-        <div id="settings-view" class="d-none">
-            <div class="d-flex justify-content-start mb-3">
-                <button id="btn-to-training" class="btn btn-primary">Start Training</button>
+        <div id="settings-view" class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h5 mb-0">Settings</h2>
             </div>
-
-            <div class="card mb-4">
-                <div class="card-header">Options</div>
-                <div class="card-body">
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="opt-loop">
-                        <label class="form-check-label" for="opt-loop">Loop Progression</label>
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="opt-bass">
-                        <label class="form-check-label" for="opt-bass">Add Bass Note</label>
-                    </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h3 class="h6">Select Progressions</h3>
                     <div class="mb-2">
-                        <label for="opt-tempo" class="form-label">Tempo (BPM): <span id="tempo-val">120</span></label>
-                        <input type="range" class="form-range" id="opt-tempo" min="40" max="200" step="5" value="120">
+                        <button id="select-all-btn" class="btn btn-sm btn-outline-secondary">Select All</button>
+                        <button id="deselect-all-btn" class="btn btn-sm btn-outline-secondary">Deselect All</button>
+                    </div>
+                    <div id="progression-list" class="row g-2">
+                        <!-- Progressions will be injected here -->
                     </div>
                 </div>
-            </div>
 
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Select Progressions</span>
-                    <div>
-                        <button id="btn-select-all" class="btn btn-sm btn-outline-primary">Select All</button>
-                        <button id="btn-deselect-all" class="btn btn-sm btn-outline-secondary">Deselect All</button>
+                <div class="mb-4">
+                    <h3 class="h6">Options</h3>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="loop-toggle">
+                        <label class="form-check-label" for="loop-toggle">Loop Progression</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="bass-toggle">
+                        <label class="form-check-label" for="bass-toggle">Add Bass Note</label>
+                    </div>
+                    <div class="mt-3">
+                        <label for="tempo-slider" class="form-label">Tempo: <span id="tempo-value">120</span> BPM</label>
+                        <input type="range" class="form-range" id="tempo-slider" min="40" max="200" value="120">
                     </div>
                 </div>
-                <div class="card-body">
-                    <div id="progression-list" class="row">
-                        <!-- Checkboxes will be injected here -->
-                    </div>
+
+                <div class="d-grid">
+                    <button id="start-training-btn" class="btn btn-primary btn-lg">Start Training</button>
                 </div>
             </div>
         </div>
 
+        <!-- Training View -->
+        <div id="training-view" class="d-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <button id="settings-btn" class="btn btn-outline-secondary">Settings</button>
+                <div class="text-end">
+                    <span class="badge bg-info text-dark fs-6">Correct: <span id="stats-correct">0</span>/<span id="stats-total">0</span> (<span id="stats-accuracy">0</span>%)</span>
+                    <button id="reset-stats-btn" class="btn btn-sm btn-link text-muted p-0 ms-2">Reset</button>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <button id="play-btn" class="btn btn-success btn-lg px-5 me-2">Play</button>
+                        <button id="stop-btn" class="btn btn-danger btn-lg px-5 me-2" disabled>Stop</button>
+                        <button id="next-btn" class="btn btn-primary btn-lg px-5" disabled>Next</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <h4 class="h6 text-muted">Hear Individual Chords</h4>
+                        <div id="chord-buttons" class="btn-group" role="group">
+                            <!-- Chord buttons will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h4 class="h6 text-muted text-center mb-3">Identify the Progression</h4>
+                    <div id="progression-options" class="d-grid gap-2 d-md-block text-center">
+                        <!-- Progression options will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Scripts -->
     <script src="tone.js"></script>
     <script src="bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>

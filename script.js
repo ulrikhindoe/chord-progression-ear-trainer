@@ -1,4 +1,6 @@
-// Data Structure
+// /home/ulrik/projects/chord-progression-ear-trainer/script.js
+
+// --- Data ---
 const chordProgressions = [
     { name: "i V", chords: ["i", "V"] },
     { name: "i iv", chords: ["i", "iv"] },
@@ -13,119 +15,86 @@ const chordProgressions = [
     { name: "I IV I V", chords: ["I", "IV", "I", "V"] }
 ];
 
-// App State
-const state = {
+// --- State ---
+let state = {
     selectedIndices: new Set(chordProgressions.map((_, i) => i)), // Default all selected
     currentProgressionIndex: null,
-    currentKey: null,
-    currentChordNotes: [], // Array of arrays of notes
-    currentBassNotes: [],
+    currentKeyRoot: 60, // Middle C
+    currentChords: [], // Array of { notes: [], duration: '1m' }
     isPlaying: false,
-    hasAnswered: false,
     stats: {
         total: 0,
         correct: 0
     },
-    options: {
+    settings: {
         loop: false,
         bass: false,
         tempo: 120
-    }
+    },
+    toneStarted: false,
+    answered: false
 };
 
-// Tone.js Instruments
-let polySynth;
-let bassSynth;
+// --- Audio Setup ---
+let synth, bassSynth;
+const CHORD_DURATION = 1.5; // Seconds
 
-// Music Theory Constants
-const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const ROMAN_REGEX = /^(b|#)?(I|II|III|IV|V|VI|VII|i|ii|iii|iv|v|vi|vii)$/i;
+// --- DOM Elements ---
+const views = {
+    settings: document.getElementById('settings-view'),
+    training: document.getElementById('training-view')
+};
 
-// Initialization
-document.addEventListener('DOMContentLoaded', () => {
-    initTone();
-    initUI();
+const els = {
+    progressionList: document.getElementById('progression-list'),
+    selectAllBtn: document.getElementById('select-all-btn'),
+    deselectAllBtn: document.getElementById('deselect-all-btn'),
+    loopToggle: document.getElementById('loop-toggle'),
+    bassToggle: document.getElementById('bass-toggle'),
+    tempoSlider: document.getElementById('tempo-slider'),
+    tempoValue: document.getElementById('tempo-value'),
+    startTrainingBtn: document.getElementById('start-training-btn'),
+    settingsBtn: document.getElementById('settings-btn'),
+    playBtn: document.getElementById('play-btn'),
+    stopBtn: document.getElementById('stop-btn'),
+    nextBtn: document.getElementById('next-btn'),
+    chordButtons: document.getElementById('chord-buttons'),
+    progressionOptions: document.getElementById('progression-options'),
+    statsCorrect: document.getElementById('stats-correct'),
+    statsTotal: document.getElementById('stats-total'),
+    statsAccuracy: document.getElementById('stats-accuracy'),
+    resetStatsBtn: document.getElementById('reset-stats-btn')
+};
+
+// --- Initialization ---
+function init() {
     renderSettingsList();
-    updateStatsUI();
-});
+    updateStatsDisplay();
 
-function initTone() {
-    polySynth = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "triangle" },
-        envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
-    }).toDestination();
-    polySynth.volume.value = -6;
+    // Event Listeners
+    els.selectAllBtn.addEventListener('click', () => toggleAllProgressions(true));
+    els.deselectAllBtn.addEventListener('click', () => toggleAllProgressions(false));
 
-    bassSynth = new Tone.Synth({
-        oscillator: { type: "sine" },
-        envelope: { attack: 0.05, decay: 0.1, sustain: 0.8, release: 1 }
-    }).toDestination();
-    bassSynth.volume.value = -3;
+    els.loopToggle.addEventListener('change', (e) => state.settings.loop = e.target.checked);
+    els.bassToggle.addEventListener('change', (e) => state.settings.bass = e.target.checked);
+    els.tempoSlider.addEventListener('input', (e) => {
+        state.settings.tempo = parseInt(e.target.value);
+        els.tempoValue.textContent = state.settings.tempo;
+        if (Tone.Transport) Tone.Transport.bpm.value = state.settings.tempo;
+    });
+
+    els.startTrainingBtn.addEventListener('click', startTraining);
+    els.settingsBtn.addEventListener('click', showSettings);
+
+    els.playBtn.addEventListener('click', () => playCurrentProgression());
+    els.stopBtn.addEventListener('click', stopPlayback);
+    els.nextBtn.addEventListener('click', nextProgression);
+    els.resetStatsBtn.addEventListener('click', resetStats);
 }
 
-function initUI() {
-    // View Navigation
-    document.getElementById('btn-to-settings').addEventListener('click', () => switchView('settings'));
-    document.getElementById('btn-to-training').addEventListener('click', () => {
-        switchView('training');
-        if (state.currentProgressionIndex === null) {
-            nextProgression();
-        }
-    });
-
-    // Controls
-    document.getElementById('btn-play').addEventListener('click', async () => {
-        await Tone.start();
-        playProgression();
-    });
-    document.getElementById('btn-stop').addEventListener('click', stopPlayback);
-    document.getElementById('btn-reset').addEventListener('click', resetStats);
-    document.getElementById('btn-next').addEventListener('click', nextProgression);
-
-    // Settings Options
-    document.getElementById('opt-loop').addEventListener('change', (e) => {
-        state.options.loop = e.target.checked;
-        if (state.isPlaying) {
-            // Restart playback to apply loop setting change immediately if desired,
-            // or just let it apply on next play. For simplicity, we stop.
-            stopPlayback();
-        }
-    });
-    document.getElementById('opt-bass').addEventListener('change', (e) => state.options.bass = e.target.checked);
-    document.getElementById('opt-tempo').addEventListener('input', (e) => {
-        state.options.tempo = parseInt(e.target.value);
-        document.getElementById('tempo-val').textContent = state.options.tempo;
-        Tone.Transport.bpm.value = state.options.tempo;
-    });
-
-    // Selection Buttons
-    document.getElementById('btn-select-all').addEventListener('click', () => {
-        state.selectedIndices = new Set(chordProgressions.map((_, i) => i));
-        renderSettingsList();
-    });
-    document.getElementById('btn-deselect-all').addEventListener('click', () => {
-        state.selectedIndices.clear();
-        renderSettingsList();
-    });
-}
-
-function switchView(view) {
-    const trainingView = document.getElementById('training-view');
-    const settingsView = document.getElementById('settings-view');
-
-    if (view === 'settings') {
-        stopPlayback();
-        trainingView.classList.add('d-none');
-        settingsView.classList.remove('d-none');
-    } else {
-        settingsView.classList.add('d-none');
-        trainingView.classList.remove('d-none');
-    }
-}
-
+// --- Settings Logic ---
 function renderSettingsList() {
-    const list = document.getElementById('progression-list');
-    list.innerHTML = '';
+    els.progressionList.innerHTML = '';
     chordProgressions.forEach((prog, index) => {
         const col = document.createElement('div');
         col.className = 'col-md-6 col-lg-4';
@@ -139,185 +108,178 @@ function renderSettingsList() {
         input.id = `prog-${index}`;
         input.checked = state.selectedIndices.has(index);
         input.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                state.selectedIndices.add(index);
-            } else {
-                state.selectedIndices.delete(index);
-            }
+            if (e.target.checked) state.selectedIndices.add(index);
+            else state.selectedIndices.delete(index);
         });
 
         const label = document.createElement('label');
         label.className = 'form-check-label';
-        label.htmlFor = `prog-${index}`;
+        label.htmlFor = `prog-`;
         label.textContent = prog.name;
 
         div.appendChild(input);
         div.appendChild(label);
         col.appendChild(div);
-        list.appendChild(col);
+        els.progressionList.appendChild(col);
     });
 }
 
-// --- Game Logic ---
-
-function nextProgression() {
-    stopPlayback();
-
-    if (state.selectedIndices.size === 0) {
-        alert("Please select at least one progression in Settings.");
-        switchView('settings');
-        return;
-    }
-
-    // Reset UI state
-    state.hasAnswered = false;
-    document.getElementById('btn-next').classList.add('d-none');
-    document.getElementById('feedback-message').textContent = '';
-
-    // Pick random progression
-    const indices = Array.from(state.selectedIndices);
-    const randomIndex = indices[Math.floor(Math.random() * indices.length)];
-    state.currentProgressionIndex = randomIndex;
-
-    // Pick random key
-    state.currentKey = NOTES[Math.floor(Math.random() * NOTES.length)];
-
-    // Generate Notes
-    generateChordNotes();
-
-    // Render UI
-    renderTrainingUI();
-
-    // Auto-play
-    playProgression();
-}
-
-function generateChordNotes() {
-    const prog = chordProgressions[state.currentProgressionIndex];
-    state.currentChordNotes = [];
-    state.currentBassNotes = [];
-
-    prog.chords.forEach(roman => {
-        const { notes, bass } = romanToNotes(roman, state.currentKey);
-        state.currentChordNotes.push(notes);
-        state.currentBassNotes.push(bass);
+function toggleAllProgressions(select) {
+    const checkboxes = els.progressionList.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach((cb, index) => {
+        cb.checked = select;
+        if (select) state.selectedIndices.add(index);
+        else state.selectedIndices.delete(index);
     });
 }
 
-function romanToNotes(roman, key) {
-    // Parse Roman Numeral
-    // e.g. bVI -> accidental: 'b', numeral: 'VI'
-    // i -> accidental: undefined, numeral: 'i'
-    const match = roman.match(ROMAN_REGEX);
-    if (!match) return { notes: [], bass: null };
+// --- Audio Logic ---
+async function initAudio() {
+    if (state.toneStarted) return;
+    await Tone.start();
 
-    const accidental = match[1] || '';
+    synth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
+    }).toDestination();
+    synth.volume.value = -8;
+
+    bassSynth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.05, decay: 0.1, sustain: 0.8, release: 1 }
+    }).toDestination();
+    bassSynth.volume.value = -2; // Louder bass
+
+    state.toneStarted = true;
+}
+
+function generateProgressionData(progressionIndex) {
+    const progression = chordProgressions[progressionIndex];
+    // Random key: MIDI 48 (C3) to 59 (B3) as base for root calculation
+    // We'll use a base octave of 4 (60-71) for the chords to sit in
+    const keyRoot = 60 + Math.floor(Math.random() * 12);
+
+    const chords = progression.chords.map(roman => {
+        const { rootOffset, quality } = parseRoman(roman);
+        const rootMidi = keyRoot + rootOffset;
+
+        // Build Triad
+        let notes = [rootMidi]; // Root
+        if (quality === 'major') {
+            notes.push(rootMidi + 4); // Major 3rd
+            notes.push(rootMidi + 7); // Perfect 5th
+        } else if (quality === 'minor') {
+            notes.push(rootMidi + 3); // Minor 3rd
+            notes.push(rootMidi + 7); // Perfect 5th
+        } else if (quality === 'diminished') {
+            notes.push(rootMidi + 3); // Minor 3rd
+            notes.push(rootMidi + 6); // Diminished 5th
+        }
+
+        // Inversion (0, 1, 2)
+        const inversion = Math.floor(Math.random() * 3);
+        let invertedNotes = [...notes];
+
+        if (inversion === 1) {
+            // 1st inversion: Root goes up an octave
+            invertedNotes[0] += 12;
+        } else if (inversion === 2) {
+            // 2nd inversion: Root and 3rd go up an octave
+            invertedNotes[0] += 12;
+            invertedNotes[1] += 12;
+        }
+        // Sort notes for cleaner voice leading logic if we were doing that,
+        // but here just to keep them tidy.
+        invertedNotes.sort((a, b) => a - b);
+
+        // Bass note (Root, 2 octaves down from key root)
+        const bassNote = rootMidi - 24;
+
+        return {
+            notes: invertedNotes.map(m => Tone.Frequency(m, "midi").toNote()),
+            bass: Tone.Frequency(bassNote, "midi").toNote()
+        };
+    });
+
+    return chords;
+}
+
+function parseRoman(roman) {
+    // Regex to separate accidental, numeral, quality
+    const match = roman.match(/^([b#]?)([ivIV]+)(.*)$/);
+    if (!match) return { rootOffset: 0, quality: 'major' };
+
+    const accidental = match[1];
     const numeral = match[2];
-    const isMajor = numeral === numeral.toUpperCase();
+    // const modifier = match[3]; // dim, aug, etc. (not fully implemented in this simple version)
 
-    // Map numeral to scale degree (0-11 semitones from root)
-    const scaleDegrees = {
-        'i': 0, 'ii': 2, 'iii': 4, 'iv': 5, 'v': 7, 'vi': 9, 'vii': 11
-    };
-    const normalizedNumeral = numeral.toLowerCase();
-    let semitoneOffset = scaleDegrees[normalizedNumeral];
+    let scaleDegree = 0;
+    const upper = numeral.toUpperCase();
 
-    // Apply accidental to root offset
-    if (accidental === 'b') semitoneOffset -= 1;
-    if (accidental === '#') semitoneOffset += 1;
-
-    // Calculate Root Note
-    const keyIndex = NOTES.indexOf(key);
-    const rootIndex = (keyIndex + semitoneOffset + 12) % 12; // +12 to handle negative
-    const rootNoteName = NOTES[rootIndex];
-
-    // Build Triad Intervals
-    // Major: 0, 4, 7
-    // Minor: 0, 3, 7
-    // Diminished (vii usually): 0, 3, 6 (Assuming standard diatonic triads for simplicity unless specified)
-    // The prompt examples are mostly Major/Minor.
-    // Let's stick to Major/Minor based on case.
-    let intervals = isMajor ? [0, 4, 7] : [0, 3, 7];
-
-    // Calculate actual notes
-    // Base octave 4
-    let notes = intervals.map(interval => {
-        const noteIndex = (rootIndex + interval) % 12;
-        const noteName = NOTES[noteIndex];
-        // Simple octave logic: if note index is lower than key index, bump octave?
-        // Or just keep everything around middle C (C4).
-        // Let's calculate absolute semitones to determine octave.
-        // Root absolute: keyIndex + semitoneOffset.
-        // Note absolute: Root absolute + interval.
-        const absSemitone = keyIndex + semitoneOffset + interval;
-        const octave = 4 + Math.floor(absSemitone / 12);
-        return noteName + octave;
-    });
-
-    // Inversions: Randomly select Root, 1st, or 2nd
-    const inversion = Math.floor(Math.random() * 3);
-    if (inversion === 1) {
-        // Move root up an octave
-        const root = notes.shift();
-        const noteName = root.slice(0, -1);
-        const oct = parseInt(root.slice(-1)) + 1;
-        notes.push(noteName + oct);
-    } else if (inversion === 2) {
-        // Move root and 3rd up an octave
-        const root = notes.shift();
-        const third = notes.shift();
-
-        const rootName = root.slice(0, -1);
-        const rootOct = parseInt(root.slice(-1)) + 1;
-
-        const thirdName = third.slice(0, -1);
-        const thirdOct = parseInt(third.slice(-1)) + 1;
-
-        notes.push(rootName + rootOct);
-        notes.push(thirdName + thirdOct);
+    switch (upper) {
+        case 'I': scaleDegree = 0; break;
+        case 'II': scaleDegree = 2; break;
+        case 'III': scaleDegree = 4; break;
+        case 'IV': scaleDegree = 5; break;
+        case 'V': scaleDegree = 7; break;
+        case 'VI': scaleDegree = 9; break;
+        case 'VII': scaleDegree = 11; break;
     }
 
-    // Bass Note (Root, lower octave)
-    // Octave 2 or 3
-    const bassOctave = 2 + Math.floor((keyIndex + semitoneOffset) / 12);
-    const bassNote = rootNoteName + bassOctave;
+    // Adjust for accidental
+    if (accidental === 'b') scaleDegree -= 1;
+    if (accidental === '#') scaleDegree += 1;
 
-    return { notes, bass: bassNote };
+    // Determine quality from case
+    const isMajor = numeral === upper;
+    // Simple logic: lowercase is minor unless it's diminished (usually indicated by 'o' or context, but prompt implies triads)
+    // For this app, we assume standard triads based on casing.
+    // Special case: 'bIII' in minor is Major, 'bVI' is Major.
+    // The prompt data uses casing correctly (e.g., 'bVI' is Major, 'ii' is minor).
+
+    return {
+        rootOffset: scaleDegree,
+        quality: isMajor ? 'major' : 'minor' // Simplified, could add dim check if needed
+    };
 }
 
-function playProgression() {
-    if (state.isPlaying) stopPlayback();
+function playCurrentProgression() {
+    if (!state.toneStarted) return;
+    stopPlayback(); // Stop any existing playback
+
     state.isPlaying = true;
+    els.stopBtn.disabled = false;
+    els.playBtn.disabled = true;
 
+    Tone.Transport.bpm.value = state.settings.tempo;
     Tone.Transport.cancel();
-    Tone.Transport.bpm.value = state.options.tempo;
 
-    const chordDuration = "1n"; // 1 measure per chord? Or maybe half note. Let's do 2n (half note) for better pace.
-    const chordTime = Tone.Time("2n").toSeconds();
+    const totalDuration = state.currentChords.length * CHORD_DURATION;
 
     // Schedule chords
-    state.currentChordNotes.forEach((notes, i) => {
-        const time = i * chordTime;
+    state.currentChords.forEach((chord, i) => {
+        const time = i * CHORD_DURATION;
 
         Tone.Transport.schedule((t) => {
-            polySynth.triggerAttackRelease(notes, "2n", t);
-            if (state.options.bass) {
-                bassSynth.triggerAttackRelease(state.currentBassNotes[i], "2n", t);
+            // Trigger Chord
+            synth.triggerAttackRelease(chord.notes, CHORD_DURATION - 0.1, t);
+
+            // Trigger Bass
+            if (state.settings.bass) {
+                bassSynth.triggerAttackRelease(chord.bass, CHORD_DURATION - 0.1, t);
             }
 
-            // Highlight current chord button
+            // Highlight chord button
             highlightChordButton(i);
         }, time);
     });
 
-    const totalDuration = state.currentChordNotes.length * chordTime;
-
-    if (state.options.loop) {
+    // Schedule loop or stop
+    if (state.settings.loop) {
         Tone.Transport.loop = true;
         Tone.Transport.loopEnd = totalDuration;
     } else {
         Tone.Transport.loop = false;
-        // Stop transport after progression finishes
         Tone.Transport.schedule((t) => {
             stopPlayback();
         }, totalDuration);
@@ -327,103 +289,144 @@ function playProgression() {
 }
 
 function stopPlayback() {
-    state.isPlaying = false;
     Tone.Transport.stop();
     Tone.Transport.cancel();
-    // Clear chord button highlights
-    document.querySelectorAll('#chord-buttons .btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
+    // Release all notes just in case
+    if (synth) synth.releaseAll();
+    if (bassSynth) bassSynth.releaseAll();
+
+    state.isPlaying = false;
+    els.stopBtn.disabled = true;
+    els.playBtn.disabled = false;
+    clearChordHighlights();
 }
 
 function playSingleChord(index) {
-    if (state.currentChordNotes[index]) {
-        polySynth.triggerAttackRelease(state.currentChordNotes[index], "4n");
-        if (state.options.bass) {
-            bassSynth.triggerAttackRelease(state.currentBassNotes[index], "4n");
-        }
+    if (!state.toneStarted || !state.currentChords[index]) return;
+    const chord = state.currentChords[index];
+    synth.triggerAttackRelease(chord.notes, "8n");
+    if (state.settings.bass) {
+        bassSynth.triggerAttackRelease(chord.bass, "8n");
     }
 }
 
-function renderTrainingUI() {
-    // Render Chord Buttons (1, 2, 3...)
-    const chordContainer = document.getElementById('chord-buttons');
-    chordContainer.innerHTML = '';
-    state.currentChordNotes.forEach((_, i) => {
+// --- Training Logic ---
+async function startTraining() {
+    if (state.selectedIndices.size === 0) {
+        alert("Please select at least one progression.");
+        return;
+    }
+
+    await initAudio();
+
+    views.settings.classList.add('d-none');
+    views.training.classList.remove('d-none');
+
+    nextProgression();
+}
+
+function showSettings() {
+    stopPlayback();
+    views.training.classList.add('d-none');
+    views.settings.classList.remove('d-none');
+}
+
+function nextProgression() {
+    stopPlayback();
+    state.answered = false;
+    els.nextBtn.disabled = true;
+    els.progressionOptions.classList.remove('options-locked');
+
+    // Pick random progression from selection
+    const indices = Array.from(state.selectedIndices);
+    const randomIndex = indices[Math.floor(Math.random() * indices.length)];
+    state.currentProgressionIndex = randomIndex;
+
+    // Generate notes/inversions
+    state.currentChords = generateProgressionData(randomIndex);
+
+    // Render UI
+    renderChordButtons();
+    renderProgressionOptions();
+
+    // Auto play? Prompt doesn't specify, but usually good.
+    // "When a progression plays..." implies it plays automatically or user clicks play.
+    // Let's wait for user to click Play to avoid startling.
+}
+
+function renderChordButtons() {
+    els.chordButtons.innerHTML = '';
+    state.currentChords.forEach((_, i) => {
         const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-outline-secondary';
+        btn.className = 'btn btn-outline-dark btn-chord mx-1';
         btn.textContent = i + 1;
-        btn.id = `chord-btn-${i}`;
         btn.addEventListener('click', () => playSingleChord(i));
-        chordContainer.appendChild(btn);
+        els.chordButtons.appendChild(btn);
     });
+}
 
-    // Render Progression Choices
-    const choiceContainer = document.getElementById('progression-choices');
-    choiceContainer.innerHTML = '';
-
-    // Only show selected progressions
+function renderProgressionOptions() {
+    els.progressionOptions.innerHTML = '';
+    // Show buttons for ALL selected progressions
     state.selectedIndices.forEach(index => {
         const prog = chordProgressions[index];
         const btn = document.createElement('button');
-        btn.className = 'btn btn-outline-primary btn-choice mb-2';
+        btn.className = 'btn btn-outline-primary btn-lg btn-progression';
         btn.textContent = prog.name;
         btn.dataset.index = index;
         btn.addEventListener('click', () => checkAnswer(index, btn));
-        choiceContainer.appendChild(btn);
+        els.progressionOptions.appendChild(btn);
     });
 }
 
-function highlightChordButton(index) {
-    Tone.Draw.schedule(() => {
-        document.querySelectorAll('#chord-buttons .btn').forEach(b => b.classList.remove('active'));
-        const btn = document.getElementById(`chord-btn-${index}`);
-        if (btn) btn.classList.add('active');
-    }, Tone.now());
-}
-
 function checkAnswer(selectedIndex, btnElement) {
-    if (state.hasAnswered) return; // Prevent multiple guesses per round
-    state.hasAnswered = true;
-
-    const isCorrect = selectedIndex === state.currentProgressionIndex;
-    const feedbackEl = document.getElementById('feedback-message');
+    if (state.answered) return;
+    state.answered = true;
 
     state.stats.total++;
+    const isCorrect = selectedIndex === state.currentProgressionIndex;
+
     if (isCorrect) {
         state.stats.correct++;
-        btnElement.classList.remove('btn-outline-primary');
-        btnElement.classList.add('btn-correct');
-        feedbackEl.textContent = "Correct!";
-        feedbackEl.className = "text-center mt-3 fw-bold text-success";
+        btnElement.classList.add('correct-answer');
     } else {
-        btnElement.classList.remove('btn-outline-primary');
-        btnElement.classList.add('btn-incorrect');
-        feedbackEl.textContent = "Incorrect.";
-        feedbackEl.className = "text-center mt-3 fw-bold text-danger";
-
-        // Highlight the correct one
-        const correctBtn = document.querySelector(`button[data-index="${state.currentProgressionIndex}"]`);
-        if (correctBtn) {
-            correctBtn.classList.remove('btn-outline-primary');
-            correctBtn.classList.add('btn-correct');
-        }
+        btnElement.classList.add('wrong-answer');
+        // Highlight correct one
+        const correctBtn = els.progressionOptions.querySelector(`button[data-index="${state.currentProgressionIndex}"]`);
+        if (correctBtn) correctBtn.classList.add('correct-answer');
     }
 
-    updateStatsUI();
-    document.getElementById('btn-next').classList.remove('d-none');
+    updateStatsDisplay();
+    els.progressionOptions.classList.add('options-locked');
+    els.nextBtn.disabled = false;
 }
 
-function updateStatsUI() {
-    document.getElementById('stat-total').textContent = state.stats.total;
-    document.getElementById('stat-correct').textContent = state.stats.correct;
-    const accuracy = state.stats.total === 0 ? 0 : Math.round((state.stats.correct / state.stats.total) * 100);
-    document.getElementById('stat-accuracy').textContent = `${accuracy}%`;
+function highlightChordButton(index) {
+    // Remove active class from all
+    const btns = els.chordButtons.children;
+    for (let btn of btns) btn.classList.remove('active');
+    // Add to current
+    if (btns[index]) btns[index].classList.add('active');
+}
+
+function clearChordHighlights() {
+    const btns = els.chordButtons.children;
+    for (let btn of btns) btn.classList.remove('active');
+}
+
+// --- Statistics ---
+function updateStatsDisplay() {
+    els.statsCorrect.textContent = state.stats.correct;
+    els.statsTotal.textContent = state.stats.total;
+    const acc = state.stats.total === 0 ? 0 : Math.round((state.stats.correct / state.stats.total) * 100);
+    els.statsAccuracy.textContent = acc;
 }
 
 function resetStats() {
     state.stats.total = 0;
     state.stats.correct = 0;
-    updateStatsUI();
+    updateStatsDisplay();
 }
+
+// Start
+init();
