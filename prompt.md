@@ -33,11 +33,10 @@ const chordProgressions = [
 ### 1. Setup & Configuration
 - Display a list of all available chord progressions with checkboxes.
 - Allow the user to select a subset of progressions to train on.
-- Option to set the number of progressions in the exercise (or continuous mode).
 
 ### 2. Playback Logic
 - **Library**: Use Tone.js PolySynth.
-- **Key**: Pick one of the twelve keys randomly.
+- **Key**: Pick one of the twelve chromatic keys randomly.
 - **Chord Generation**:
   - Parse Roman numerals (e.g., "bVI" -> Flat 6 Major).
   - Chords are triads (Root, 3rd, 5th).
@@ -46,7 +45,7 @@ const chordProgressions = [
   - **Chord length**: 1.5 second
 - **Playback Options**:
   - **Loop**: Toggle to loop the progression. If looping, keep the specific generated inversions constant for all rounds.
-  - **Bass**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony. Make the bass note louder than the other chord tones in order to make it stand out
+  - **Bass**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony. Make the bass note louder than the other chord tones (e.g. +3dB) in order to make it stand out.
   - **Tempo**: Adjustable playback speed (BPM).
 - **Controls**: Play and Stop buttons.
 
@@ -83,6 +82,7 @@ There are two views in the app: Training and Settings. When the app is started t
 ### 4. Interaction & Game Loop
 - You go from Settings to Training by pressing a "Start training" button.
 - You go from Training to Settings by pressing a "Settings" button.
+- **Audio Context**: Ensure `Tone.start()` is called on the first user interaction (e.g., pressing "Play") to enable audio in modern browsers.
 - In settings you choose the subset of progressions to train on. You also have the option to add a bass note and the option to keep looping the progression
 - When a progression plays, display buttons corresponding to the *selected* progressions.
 - User clicks the button they think matches the progression played.
