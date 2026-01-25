@@ -1,24 +1,42 @@
 /* /home/ulrik/projects/chord-progression-ear-trainer/styles.css */
+
+/* Highlight for the currently playing chord button */
 .chord-btn.active {
-    background-color: #ffc107; /* Warning color for highlight */
-    color: #000;
-    border-color: #ffc107;
+    background-color: #ffc107 !important; /* Bootstrap warning yellow */
+    color: #000 !important;
+    border-color: #ffc107 !important;
+    transform: scale(1.05);
+    transition: transform 0.1s;
 }
 
+/* Progression Choice Buttons */
 .choice-btn {
-    text-align: left;
-    margin-bottom: 0.5rem;
-    width: 100%;
+    min-width: 100px;
+    transition: all 0.2s;
 }
 
+/* Correct Answer State */
 .choice-btn.correct {
-    background-color: #198754 !important; /* Success */
+    background-color: #198754 !important; /* Bootstrap success green */
     border-color: #198754 !important;
     color: white !important;
 }
 
+/* Incorrect Answer State */
 .choice-btn.incorrect {
-    background-color: #dc3545 !important; /* Danger */
+    background-color: #dc3545 !important; /* Bootstrap danger red */
     border-color: #dc3545 !important;
     color: white !important;
+    opacity: 0.8;
+}
+
+/* Disabled state for choices after answering */
+.choice-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* Ensure settings list is scrollable nicely */
+#progression-list label {
+    cursor: pointer;
 }
