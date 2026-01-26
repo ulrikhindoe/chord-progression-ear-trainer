@@ -2,7 +2,7 @@
 
 I want to build an app to train recognizing chord progressions.
 
-The project includes three main files: `index.html`, `script.js` and `styles.css`.
+The app is should be implemented with three files: `index.html`, `script.js` and `styles.css`.
 
 ## Tech Stack
 - **Language**: JavaScript (Vanilla JS).
