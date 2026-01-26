@@ -20,6 +20,12 @@ const chordProgressions = [
     { name: "i IV", chords: ["i", "IV"] },
     { name: "I V", chords: ["I", "V"] },
     { name: "I IV", chords: ["I", "IV"] },
+    { name: "i bIII", chords: ["i", "bIII"] },
+    { name: "i bVI", chords: ["i", "bVI"] },
+    { name: "i bVII", chords: ["i", "bVII"] },
+    { name: "I ii", chords: ["I", "ii"] },
+    { name: "I iii", chords: ["I", "iii"] },
+    { name: "I vi", chords: ["I", "vi"] },
     { name: "i bVI bIII bVII", chords: ["i", "bVI", "bIII", "bVII"] },
     { name: "I IV V I", chords: ["I", "IV", "V", "I"] },
     { name: "ii V I", chords: ["ii", "V", "I"] },
@@ -46,8 +52,8 @@ const chordProgressions = [
   - **Voice Leading**: Implement smooth voice leading. Choose inversions for subsequent chords that minimize the total distance notes move from the previous chord (nearest neighbor).
   - **Chord length**: 1 measure (4 beats).
 - **Playback Options**:
-  - **Loop**: Toggle to loop the progression. If looping, keep the specific generated inversions constant for all rounds.
-  - **Bass**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony. Make the bass note louder than the other chord tones (e.g. +2dB) in order to make it stand out.
+  - **Loop progression**: Toggle to loop the progression. If looping, keep the specific generated inversions constant for all rounds.
+  - **Add bass note**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony. Make the bass note louder than the other chord tones (e.g. +2dB) in order to make it stand out.
   - **Tempo**: Adjustable playback speed (BPM). Changing BPM should scale the duration of the chords.
 - **Controls**: Play and Stop buttons.
 
@@ -63,6 +69,7 @@ There are two views in the app: Training and Settings. When the app is started t
   - To the right
     - "Settings" button to go to Settings
 - Control section
+  - The three buttons in this secions are in one row
   - Button named "Play" to play the current progression
     - Must always be shown
     - **Must always be visible** (do not hide it when playback starts).
@@ -75,6 +82,7 @@ There are two views in the app: Training and Settings. When the app is started t
     - When pressed play the next progression immediately
 - Chords section
   - There is a button for each chord in the progression labelled 1,2,3...
+  - The buttons must be wide enough so they are easy to press
   - When a chord is played the corresponding button is highlighted
   - When pressing a chord button the related chord is played as long the button is pressed
 - Progression choice section
@@ -87,11 +95,12 @@ There are two views in the app: Training and Settings. When the app is started t
   - Under the buttons provide immediate visual feedback (Correct/Incorrect).
 
 #### 3.2 Settings View
-- Select progressions to train on
-  - All progressions defined
+- No section should have internal scrolling (the page should scroll naturally).
+- "Training" button on the top of the page to go to Training.
+  - When pressed the exercise is updated according to the new settings but the current statistics are kept.- Select progressions to train on
+- All progressions defined
   - "Select all" and "Deselect all" buttons
 - Options
   - Loop Progression
   - Add Bass Note
   - Tempo Slider (BPM)
-- "Training" button to go to Training. When pressed the exercise is updated according to the new settings but the current statistics are kept.
