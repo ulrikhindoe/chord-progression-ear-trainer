@@ -1,6 +1,3 @@
-// /home/ulrik/projects/chord-progression-ear-trainer/script.js
-
-// --- Data ---
 const chordProgressions = [
     { name: "i V", chords: ["i", "V"] },
     { name: "i v", chords: ["i", "v"] },
@@ -8,6 +5,12 @@ const chordProgressions = [
     { name: "i IV", chords: ["i", "IV"] },
     { name: "I V", chords: ["I", "V"] },
     { name: "I IV", chords: ["I", "IV"] },
+    { name: "i bIII", chords: ["i", "bIII"] },
+    { name: "i bVI", chords: ["i", "bVI"] },
+    { name: "i bVII", chords: ["i", "bVII"] },
+    { name: "I ii", chords: ["I", "ii"] },
+    { name: "I iii", chords: ["I", "iii"] },
+    { name: "I vi", chords: ["I", "vi"] },
     { name: "i bVI bIII bVII", chords: ["i", "bVI", "bIII", "bVII"] },
     { name: "I IV V I", chords: ["I", "IV", "V", "I"] },
     { name: "ii V I", chords: ["ii", "V", "I"] },
@@ -17,471 +20,499 @@ const chordProgressions = [
     { name: "I IV I V", chords: ["I", "IV", "I", "V"] }
 ];
 
-// --- State ---
+// --- State Management ---
 const state = {
+    selectedProgressions: [], // Indices of selected progressions
+    currentProgressionIndex: -1,
+    currentKeyMidi: 60, // Middle C as default, will be randomized
+    currentVoicing: [], // Array of { notes: [midi...], bass: midi, duration: '1m' }
+    isPlaying: false,
+    stats: { correct: 0, total: 0 },
+    hasAnswered: false,
     settings: {
-        selectedIndices: chordProgressions.map((_, i) => i), // Default all
         loop: false,
         bass: false,
         tempo: 120
-    },
-    stats: {
-        correct: 0,
-        total: 0
-    },
-    currentExercise: null, // { template, key, chords: [{notes:[], bass:Str, duration}] }
-    isPlaying: false,
-    hasAnswered: false
+    }
 };
 
-// --- Tone.js Instruments ---
+// --- Tone.js Setup ---
 let polySynth;
 let bassSynth;
+let transportScheduleId = null;
 
-// --- UI Elements ---
-const ui = {
-    views: {
-        training: document.getElementById('training-view'),
-        settings: document.getElementById('settings-view')
-    },
-    stats: {
-        display: document.getElementById('stats-display'),
-        reset: document.getElementById('btn-reset-stats')
-    },
-    controls: {
-        play: document.getElementById('btn-play'),
-        stop: document.getElementById('btn-stop'),
-        next: document.getElementById('btn-next'),
-        settings: document.getElementById('btn-go-settings'),
-        startTraining: document.getElementById('btn-start-training')
-    },
-    containers: {
-        chords: document.getElementById('chord-buttons'),
-        choices: document.getElementById('progression-choices'),
-        settingsList: document.getElementById('progression-list'),
-        feedback: document.getElementById('feedback-message')
-    },
-    settings: {
-        loop: document.getElementById('check-loop'),
-        bass: document.getElementById('check-bass'),
-        tempo: document.getElementById('range-tempo'),
-        tempoVal: document.getElementById('tempo-val'),
-        selectAll: document.getElementById('btn-select-all'),
-        deselectAll: document.getElementById('btn-deselect-all')
+function initAudio() {
+    if (!polySynth) {
+        polySynth = new Tone.PolySynth(Tone.Synth).toDestination();
+        polySynth.volume.value = -2; // Slightly lower to mix well with bass
     }
+    if (!bassSynth) {
+        bassSynth = new Tone.Synth().toDestination();
+        bassSynth.volume.value = 0; // +2dB relative to polySynth (approx)
+    }
+}
+
+// --- Logic: Roman Numeral Parsing & Voice Leading ---
+
+const ROMAN_INTERVALS = {
+    'i': 0, 'ii': 2, 'iii': 4, 'iv': 5, 'v': 7, 'vi': 9, 'vii': 11
 };
 
-// --- Initialization ---
-function init() {
-    setupTone();
-    setupEventListeners();
-    renderSettingsList();
-    updateStatsDisplay();
-    newExercise();
-}
-
-function setupTone() {
-    polySynth = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "triangle" },
-        envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
-    }).toDestination();
-    polySynth.volume.value = -6;
-
-    bassSynth = new Tone.Synth({
-        oscillator: { type: "sine" },
-        envelope: { attack: 0.05, decay: 0.1, sustain: 0.8, release: 1 }
-    }).toDestination();
-    // Bass louder (+2dB relative to standard, though here we just set a higher base volume)
-    bassSynth.volume.value = -2;
-}
-
-function setupEventListeners() {
-    // Navigation
-    ui.controls.settings.addEventListener('click', () => switchView('settings'));
-    ui.controls.startTraining.addEventListener('click', () => {
-        updateSettingsFromUI();
-        switchView('training');
-        newExercise();
-    });
-
-    // Stats
-    ui.stats.reset.addEventListener('click', (e) => {
-        e.preventDefault();
-        state.stats.correct = 0;
-        state.stats.total = 0;
-        updateStatsDisplay();
-    });
-
-    // Playback
-    ui.controls.play.addEventListener('click', async () => {
-        await Tone.start();
-        playProgression();
-    });
-    ui.controls.stop.addEventListener('click', stopPlayback);
-
-    // Next
-    ui.controls.next.addEventListener('click', () => {
-        newExercise();
-        playProgression();
-    });
-
-    // Settings Inputs
-    ui.settings.tempo.addEventListener('input', (e) => {
-        ui.settings.tempoVal.textContent = e.target.value;
-    });
-    ui.settings.selectAll.addEventListener('click', () => toggleAllProgressions(true));
-    ui.settings.deselectAll.addEventListener('click', () => toggleAllProgressions(false));
-}
-
-// --- Logic ---
-
-function newExercise() {
-    stopPlayback();
-    state.hasAnswered = false;
-    ui.controls.next.disabled = true;
-    ui.containers.feedback.textContent = '';
-
-    // 1. Filter available progressions
-    const available = state.settings.selectedIndices.map(i => chordProgressions[i]);
-    if (available.length === 0) {
-        alert("Please select at least one progression in settings.");
-        switchView('settings');
-        return;
+function parseRoman(symbol) {
+    let s = symbol;
+    let accidental = 0;
+    if (s.startsWith('b')) {
+        accidental = -1;
+        s = s.substring(1);
+    } else if (s.startsWith('#')) {
+        accidental = 1;
+        s = s.substring(1);
     }
 
-    // 2. Pick random progression
-    const template = available[Math.floor(Math.random() * available.length)];
+    const lower = s.toLowerCase();
+    const isMajor = s === s.toUpperCase();
+    const interval = ROMAN_INTERVALS[lower];
 
-    // 3. Pick random key
-    const keys = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    const key = keys[Math.floor(Math.random() * keys.length)];
-
-    // 4. Generate Chords
-    const chords = generateChords(key, template.chords);
-
-    state.currentExercise = {
-        template,
-        key,
-        chords
+    return {
+        interval: interval + accidental,
+        isMajor: isMajor
     };
-
-    renderTrainingUI();
 }
 
-function generateChords(key, romanNumerals) {
-    const generated = [];
-    let prevMidi = null;
+function getTriad(rootMidi, isMajor) {
+    return [rootMidi, rootMidi + (isMajor ? 4 : 3), rootMidi + 7];
+}
 
-    romanNumerals.forEach(rn => {
-        // Get Root position MIDI notes
-        const { rootMidi, triadMidi } = getChordData(key, rn);
+function getInversions(notes) {
+    const [r, t, f] = notes;
+    // Shift to be around C4 (60) for better voice leading calculation
+    // We normalize octaves later, but for generating raw shapes:
+    return [
+        [r, t, f],           // Root pos
+        [t, f, r + 12],      // 1st inv
+        [f, r + 12, t + 12]  // 2nd inv
+    ];
+}
 
-        // Choose inversion based on voice leading
-        const inversionMidi = chooseInversion(triadMidi, prevMidi);
+function getAveragePitch(notes) {
+    return notes.reduce((a, b) => a + b, 0) / notes.length;
+}
 
-        // Convert MIDI to Note Names for Tone.js
-        const notes = inversionMidi.map(m => Tone.Frequency(m, "midi").toNote());
+function generateVoicing(progressionIndex, keyMidi) {
+    const progression = chordProgressions[progressionIndex];
+    const voicing = [];
+    let prevNotes = null;
 
-        // Calculate Bass Note (Root in octave 2 or 3)
-        let bassMidi = rootMidi;
-        while (bassMidi >= 48) bassMidi -= 12; // < C3
-        while (bassMidi < 36) bassMidi += 12;  // >= C2
-        const bassNote = Tone.Frequency(bassMidi, "midi").toNote();
+    progression.chords.forEach(symbol => {
+        const parsed = parseRoman(symbol);
+        // Calculate root note of the chord
+        let chordRoot = keyMidi + parsed.interval;
 
-        generated.push({
-            roman: rn,
-            notes: notes,
+        // Normalize chord root to be within a reasonable range (e.g., octave 3-4)
+        // We want the chords to stay around middle C (60) generally
+        while (chordRoot > 67) chordRoot -= 12;
+        while (chordRoot < 55) chordRoot += 12;
+
+        const baseTriad = getTriad(chordRoot, parsed.isMajor);
+        const inversions = getInversions(baseTriad);
+
+        let bestNotes;
+
+        if (!prevNotes) {
+            // First chord: random inversion
+            const r = Math.floor(Math.random() * 3);
+            bestNotes = inversions[r];
+
+            // Shift to octave 4 area
+            const avg = getAveragePitch(bestNotes);
+            const shift = Math.round((60 - avg) / 12) * 12;
+            bestNotes = bestNotes.map(n => n + shift);
+        } else {
+            // Subsequent chords: nearest neighbor
+            const prevAvg = getAveragePitch(prevNotes);
+            let minDist = Infinity;
+
+            // Try all inversions at different octaves to find closest
+            inversions.forEach(inv => {
+                // Check 3 octaves: -1, 0, +1 relative to base calculation
+                for (let octaveShift = -12; octaveShift <= 12; octaveShift += 12) {
+                    const candidate = inv.map(n => n + octaveShift);
+                    const candAvg = getAveragePitch(candidate);
+
+                    // Distance metric: sum of absolute differences of sorted notes
+                    // (Simple approximation for voice leading)
+                    // Actually, just centroid distance is often enough for simple triads,
+                    // but let's do sum of distances for sorted notes to be more precise.
+                    const sortedPrev = [...prevNotes].sort((a, b) => a - b);
+                    const sortedCand = [...candidate].sort((a, b) => a - b);
+                    let dist = 0;
+                    for(let i=0; i<3; i++) dist += Math.abs(sortedPrev[i] - sortedCand[i]);
+
+                    if (dist < minDist) {
+                        minDist = dist;
+                        bestNotes = candidate;
+                    }
+                }
+            });
+        }
+
+        // Bass note: Root note in octave 2 or 3 (Midi 36-59)
+        let bassNote = chordRoot;
+        while (bassNote >= 48) bassNote -= 12; // Prefer lower
+        if (bassNote < 36) bassNote += 12;
+
+        voicing.push({
+            notes: bestNotes,
             bass: bassNote,
-            midi: inversionMidi // Store for next iteration voice leading
+            duration: "1m"
         });
-
-        prevMidi = inversionMidi;
+        prevNotes = bestNotes;
     });
 
-    return generated;
+    return voicing;
 }
 
-function getChordData(key, roman) {
-    // Parse Roman: e.g., "bVI" -> accidental 'b', numeral 'VI'
-    const match = roman.match(/^([b#]?)(i{1,3}|iv|v|vi{0,2}|I{1,3}|IV|V|VI{0,2})$/i);
-    if (!match) return { rootMidi: 60, triadMidi: [60, 64, 67] }; // Fallback C Major
+// --- UI Functions ---
 
-    const accidental = match[1];
-    const numeral = match[2];
-    const isMajor = numeral === numeral.toUpperCase();
-
-    // Scale degrees (0-based semitones from root)
-    const degreeMap = {
-        'i': 0, 'ii': 2, 'iii': 4, 'iv': 5, 'v': 7, 'vi': 9, 'vii': 11
-    };
-    let interval = degreeMap[numeral.toLowerCase()];
-
-    // Apply accidental
-    if (accidental === 'b') interval -= 1;
-    if (accidental === '#') interval += 1;
-
-    // Get Key Root MIDI (start at octave 4)
-    const keyRootMidi = Tone.Frequency(key + "4").toMidi();
-    const chordRootMidi = keyRootMidi + interval;
-
-    // Build Triad (Root, 3rd, 5th)
-    const third = isMajor ? 4 : 3;
-    const fifth = 7;
-
-    // Normalize to reasonable range (C3 - C5) to avoid climbing too high
-    let triad = [chordRootMidi, chordRootMidi + third, chordRootMidi + fifth];
-    triad = triad.map(n => {
-        while (n > 72) n -= 12; // Cap at C5
-        while (n < 48) n += 12; // Floor at C3
-        return n;
+function renderProgressionsList() {
+    const list = document.getElementById('progressions-list');
+    list.innerHTML = '';
+    chordProgressions.forEach((p, index) => {
+        const item = document.createElement('label');
+        item.className = 'list-group-item d-flex gap-2';
+        item.innerHTML = `
+            <input class="form-check-input flex-shrink-0" type="checkbox" value="${index}" checked>
+            <span>
+                <strong>${p.name}</strong>
+                <small class="d-block text-muted">${p.chords.join(' - ')}</small>
+            </span>
+        `;
+        list.appendChild(item);
     });
-    triad.sort((a, b) => a - b);
-
-    return { rootMidi: chordRootMidi, triadMidi: triad };
+    updateSelectedProgressions();
 }
 
-function chooseInversion(triadMidi, prevMidi) {
-    // Generate 3 inversions
-    const inv0 = [...triadMidi]; // Root pos
-    const inv1 = [triadMidi[1], triadMidi[2], triadMidi[0] + 12]; // 1st inv
-    const inv2 = [triadMidi[2], triadMidi[0] + 12, triadMidi[1] + 12]; // 2nd inv
+function updateSelectedProgressions() {
+    const checkboxes = document.querySelectorAll('#progressions-list input[type="checkbox"]');
+    state.selectedProgressions = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => parseInt(cb.value));
+}
 
-    const candidates = [inv0, inv1, inv2];
+function updateStats() {
+    const { correct, total } = state.stats;
+    const percentage = total === 0 ? 0 : Math.round((correct / total) * 100);
+    document.getElementById('stats-display').textContent = `Correct: ${correct}/${total} (${percentage}%)`;
+}
 
-    if (!prevMidi) {
-        // Random inversion for first chord
-        return candidates[Math.floor(Math.random() * candidates.length)];
+function renderTrainingView() {
+    // Render Chord Buttons
+    const chordContainer = document.getElementById('chord-buttons-container');
+    chordContainer.innerHTML = '';
+    if (state.currentProgressionIndex !== -1) {
+        const progression = chordProgressions[state.currentProgressionIndex];
+        progression.chords.forEach((_, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-outline-dark chord-btn';
+            btn.textContent = i + 1;
+            btn.dataset.index = i;
+
+            // Mouse/Touch events for previewing chord
+            const startChord = () => playSingleChord(i);
+            const stopChord = () => stopSingleChord();
+
+            btn.addEventListener('mousedown', startChord);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); startChord(); });
+            btn.addEventListener('mouseup', stopChord);
+            btn.addEventListener('mouseleave', stopChord);
+            btn.addEventListener('touchend', stopChord);
+
+            chordContainer.appendChild(btn);
+        });
     }
 
-    // Nearest Neighbor: Minimize sum of distances
-    let minDist = Infinity;
-    let best = candidates[0];
+    // Render Progression Choice Buttons
+    const progContainer = document.getElementById('progression-buttons-container');
+    progContainer.innerHTML = '';
 
-    candidates.forEach(cand => {
-        // Sort to compare voices roughly
-        const cSorted = [...cand].sort((a, b) => a - b);
-        const pSorted = [...prevMidi].sort((a, b) => a - b);
-
-        let dist = 0;
-        for (let i = 0; i < 3; i++) {
-            dist += Math.abs(cSorted[i] - pSorted[i]);
-        }
-
-        if (dist < minDist) {
-            minDist = dist;
-            best = cand;
-        }
+    // We show buttons for all progressions present in the current exercise set
+    // (i.e., selected progressions).
+    state.selectedProgressions.forEach(idx => {
+        const p = chordProgressions[idx];
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-outline-primary progression-btn';
+        btn.textContent = p.name;
+        btn.onclick = () => checkAnswer(idx, btn);
+        progContainer.appendChild(btn);
     });
 
-    return best;
+    // Reset feedback
+    document.getElementById('feedback-display').textContent = '';
+    document.getElementById('feedback-display').className = 'h4 fw-bold';
+
+    // Update controls
+    document.getElementById('next-btn').disabled = true;
+    document.getElementById('stop-btn').style.display = state.settings.loop ? 'inline-block' : 'none';
 }
 
-// --- Playback ---
+function highlightChordButton(index) {
+    const btns = document.querySelectorAll('.chord-btn');
+    btns.forEach(b => b.classList.remove('active'));
+    if (index >= 0 && index < btns.length) {
+        btns[index].classList.add('active');
+    }
+}
 
-function playProgression() {
-    if (state.isPlaying) stopPlayback();
+// --- Playback Logic ---
+
+async function playProgression() {
+    await Tone.start();
+    initAudio();
+
+    if (state.isPlaying) {
+        stopPlayback();
+        // If play is pressed again, we restart.
+        // Small delay to ensure clean restart
+        setTimeout(startTransport, 100);
+    } else {
+        startTransport();
+    }
+}
+
+function startTransport() {
     state.isPlaying = true;
-
-    // UI Updates
-    if (state.settings.loop) {
-        ui.controls.stop.classList.remove('d-none');
-    }
-
     Tone.Transport.bpm.value = state.settings.tempo;
+
+    // Clear previous events
     Tone.Transport.cancel();
 
-    const chords = state.currentExercise.chords;
-    let time = 0;
-    const measureTime = Tone.Time("1m").toSeconds();
+    const voicing = state.currentVoicing;
+    const loopLength = voicing.length; // assuming 1m per chord
 
-    chords.forEach((chord, index) => {
-        Tone.Transport.schedule((t) => {
-            // Visuals
+    // Schedule chords
+    voicing.forEach((chord, i) => {
+        Tone.Transport.schedule((time) => {
+            // Trigger UI
             Tone.Draw.schedule(() => {
-                highlightChordButton(index);
-            }, t);
+                highlightChordButton(i);
+            }, time);
 
-            // Audio
-            polySynth.triggerAttackRelease(chord.notes, "1m", t);
+            // Trigger Sound
+            const notes = chord.notes.map(n => Tone.Frequency(n, "midi").toNote());
+            polySynth.triggerAttackRelease(notes, "1m", time);
+
             if (state.settings.bass) {
-                bassSynth.triggerAttackRelease(chord.bass, "1m", t);
+                const bassNote = Tone.Frequency(chord.bass, "midi").toNote();
+                bassSynth.triggerAttackRelease(bassNote, "1m", time);
             }
-        }, time);
-
-        time += measureTime;
+        }, `${i}:0:0`); // Measure:Beat:Sixteenth
     });
 
-    if (state.settings.loop) {
-        Tone.Transport.loop = true;
-        Tone.Transport.loopEnd = time;
-    } else {
-        Tone.Transport.loop = false;
-        // Schedule stop after last chord
-        Tone.Transport.schedule((t) => {
-            Tone.Draw.schedule(() => stopPlayback(), t);
-        }, time);
+    // Schedule cleanup at end of progression (if not looping)
+    if (!state.settings.loop) {
+        Tone.Transport.schedule((time) => {
+            Tone.Draw.schedule(() => {
+                highlightChordButton(-1);
+                state.isPlaying = false;
+            }, time);
+        }, `${loopLength}:0:0`);
     }
 
+    // Loop settings
+    if (state.settings.loop) {
+        Tone.Transport.loop = true;
+        Tone.Transport.loopEnd = `${loopLength}:0:0`;
+    } else {
+        Tone.Transport.loop = false;
+    }
+
+    Tone.Transport.position = 0;
     Tone.Transport.start();
 }
 
 function stopPlayback() {
     Tone.Transport.stop();
     Tone.Transport.cancel();
-    polySynth.releaseAll();
-    bassSynth.triggerRelease();
+    // Release any hanging notes (safety)
+    if (polySynth) polySynth.releaseAll();
+    if (bassSynth) bassSynth.triggerRelease();
 
+    highlightChordButton(-1);
     state.isPlaying = false;
-    ui.controls.stop.classList.add('d-none');
-    clearChordHighlights();
 }
 
-function highlightChordButton(index) {
-    clearChordHighlights();
-    const btn = document.getElementById(`chord-btn-${index}`);
-    if (btn) btn.classList.add('active');
+function playSingleChord(index) {
+    if (!state.currentVoicing[index]) return;
+    initAudio();
+    const chord = state.currentVoicing[index];
+    const notes = chord.notes.map(n => Tone.Frequency(n, "midi").toNote());
+    polySynth.triggerAttack(notes);
+    if (state.settings.bass) {
+        const bassNote = Tone.Frequency(chord.bass, "midi").toNote();
+        bassSynth.triggerAttack(bassNote);
+    }
 }
 
-function clearChordHighlights() {
-    const btns = document.querySelectorAll('.chord-btn');
-    btns.forEach(b => b.classList.remove('active'));
+function stopSingleChord() {
+    if (polySynth) polySynth.releaseAll();
+    if (bassSynth) bassSynth.triggerRelease();
 }
 
-// --- UI Rendering ---
+// --- Game Logic ---
 
-function renderTrainingUI() {
-    // 1. Chord Buttons (1, 2, 3...)
-    ui.containers.chords.innerHTML = '';
-    state.currentExercise.chords.forEach((chord, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-outline-dark chord-btn';
-        btn.id = `chord-btn-${index}`;
-        btn.textContent = index + 1;
+function nextExercise() {
+    if (state.selectedProgressions.length === 0) {
+        alert("Please select at least one progression in Settings.");
+        return;
+    }
 
-        // Manual play on press
-        const play = () => {
-            polySynth.triggerAttack(chord.notes);
-            if (state.settings.bass) bassSynth.triggerAttack(chord.bass);
-        };
-        const stop = () => {
-            polySynth.releaseAll();
-            bassSynth.triggerRelease();
-        };
+    // Pick random progression
+    const randIndex = Math.floor(Math.random() * state.selectedProgressions.length);
+    state.currentProgressionIndex = state.selectedProgressions[randIndex];
 
-        btn.addEventListener('mousedown', play);
-        btn.addEventListener('mouseup', stop);
-        btn.addEventListener('mouseleave', stop);
-        btn.addEventListener('touchstart', (e) => { e.preventDefault(); play(); });
-        btn.addEventListener('touchend', (e) => { e.preventDefault(); stop(); });
+    // Pick random key (C=60 to B=71)
+    state.currentKeyMidi = 60 + Math.floor(Math.random() * 12);
 
-        ui.containers.chords.appendChild(btn);
-    });
+    // Generate voicing
+    state.currentVoicing = generateVoicing(state.currentProgressionIndex, state.currentKeyMidi);
 
-    // 2. Progression Choices
-    ui.containers.choices.innerHTML = '';
-    // Only show selected progressions
-    const activeProgressions = state.settings.selectedIndices.map(i => chordProgressions[i]);
-
-    activeProgressions.forEach(prog => {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-outline-primary choice-btn';
-        btn.textContent = prog.name;
-        btn.onclick = () => handleGuess(prog, btn);
-        ui.containers.choices.appendChild(btn);
-    });
+    state.hasAnswered = false;
+    renderTrainingView();
+    playProgression();
 }
 
-function handleGuess(selectedProgression, btnElement) {
-    if (state.hasAnswered) return;
+function checkAnswer(selectedIndex, btnElement) {
+    if (state.hasAnswered) return; // Prevent multiple answers
+
     state.hasAnswered = true;
+    state.stats.total++;
 
-    const isCorrect = selectedProgression.name === state.currentExercise.template.name;
+    const isCorrect = selectedIndex === state.currentProgressionIndex;
+    const feedbackEl = document.getElementById('feedback-display');
 
     if (isCorrect) {
-        btnElement.classList.add('correct');
-        ui.containers.feedback.textContent = "Correct!";
-        ui.containers.feedback.className = "mt-3 fw-bold text-success";
         state.stats.correct++;
+        btnElement.classList.remove('btn-outline-primary');
+        btnElement.classList.add('btn-success-custom');
+        feedbackEl.textContent = "Correct!";
+        feedbackEl.classList.add('text-success');
+        feedbackEl.classList.remove('text-danger');
     } else {
-        btnElement.classList.add('incorrect');
-        ui.containers.feedback.textContent = "Incorrect!";
-        ui.containers.feedback.className = "mt-3 fw-bold text-danger";
+        btnElement.classList.remove('btn-outline-primary');
+        btnElement.classList.add('btn-danger-custom');
+        feedbackEl.textContent = "Incorrect";
+        feedbackEl.classList.add('text-danger');
+        feedbackEl.classList.remove('text-success');
+
         // Highlight correct answer
-        const buttons = ui.containers.choices.querySelectorAll('.choice-btn');
+        const buttons = document.querySelectorAll('.progression-btn');
         buttons.forEach(b => {
-            if (b.textContent === state.currentExercise.template.name) {
-                b.classList.add('correct');
+            if (b.textContent === chordProgressions[state.currentProgressionIndex].name) {
+                b.classList.remove('btn-outline-primary');
+                b.classList.add('btn-success-custom');
             }
         });
     }
 
-    state.stats.total++;
-    updateStatsDisplay();
-
-    // Enable Next button
-    ui.controls.next.disabled = false;
-
-    // Disable all choice buttons
-    const buttons = ui.containers.choices.querySelectorAll('.choice-btn');
-    buttons.forEach(b => b.disabled = true);
+    updateStats();
+    document.getElementById('next-btn').disabled = false;
 }
 
-function updateStatsDisplay() {
-    const { correct, total } = state.stats;
-    const percent = total === 0 ? 0 : Math.round((correct / total) * 100);
-    ui.stats.display.textContent = `Correct: ${correct}/${total} (${percent}%)`;
-}
+// --- Event Listeners ---
 
-// --- Settings Logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Init UI
+    renderProgressionsList();
 
-function renderSettingsList() {
-    ui.containers.settingsList.innerHTML = '';
-    chordProgressions.forEach((prog, index) => {
-        const label = document.createElement('label');
-        label.className = 'list-group-item d-flex gap-2';
+    // Settings View Toggle
+    const trainingView = document.getElementById('training-view');
+    const settingsView = document.getElementById('settings-view');
 
-        const checkbox = document.createElement('input');
-        checkbox.className = 'form-check-input flex-shrink-0';
-        checkbox.type = 'checkbox';
-        checkbox.value = index;
-        checkbox.checked = state.settings.selectedIndices.includes(index);
+    document.getElementById('settings-btn').onclick = () => {
+        stopPlayback();
+        trainingView.style.display = 'none';
+        settingsView.style.display = 'block';
+    };
 
-        label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(prog.name));
-        ui.containers.settingsList.appendChild(label);
+    document.getElementById('training-btn').onclick = () => {
+        settingsView.style.display = 'none';
+        trainingView.style.display = 'block';
+        // If we haven't started yet or list changed, maybe restart?
+        // Spec says: "When pressed the exercise is updated according to the new settings but the current statistics are kept."
+        // This implies we should probably start a new exercise or at least re-render.
+        // If the current progression is no longer in the selected list, we MUST start new.
+        // Even if it is, re-generating is safer to apply settings.
+        nextExercise();
+    };
+
+    // Settings Controls
+    document.getElementById('select-all-btn').onclick = () => {
+        document.querySelectorAll('#progressions-list input').forEach(cb => cb.checked = true);
+        updateSelectedProgressions();
+    };
+
+    document.getElementById('deselect-all-btn').onclick = () => {
+        document.querySelectorAll('#progressions-list input').forEach(cb => cb.checked = false);
+        updateSelectedProgressions();
+    };
+
+    document.getElementById('progressions-list').addEventListener('change', updateSelectedProgressions);
+
+    document.getElementById('loop-checkbox').addEventListener('change', (e) => {
+        state.settings.loop = e.target.checked;
+        // Update Stop button visibility immediately if in training view
+        document.getElementById('stop-btn').style.display = state.settings.loop ? 'inline-block' : 'none';
+        // Update transport if playing
+        Tone.Transport.loop = state.settings.loop;
     });
-}
 
-function toggleAllProgressions(select) {
-    const checkboxes = ui.containers.settingsList.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(cb => cb.checked = select);
-}
+    document.getElementById('bass-checkbox').addEventListener('change', (e) => {
+        state.settings.bass = e.target.checked;
+    });
 
-function updateSettingsFromUI() {
-    state.settings.loop = ui.settings.loop.checked;
-    state.settings.bass = ui.settings.bass.checked;
-    state.settings.tempo = parseInt(ui.settings.tempo.value);
+    const tempoSlider = document.getElementById('tempo-slider');
+    const tempoValue = document.getElementById('tempo-value');
+    tempoSlider.addEventListener('input', (e) => {
+        state.settings.tempo = parseInt(e.target.value);
+        tempoValue.textContent = state.settings.tempo;
+        Tone.Transport.bpm.value = state.settings.tempo;
+    });
 
-    const checkboxes = ui.containers.settingsList.querySelectorAll('input[type="checkbox"]:checked');
-    state.settings.selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.value));
-}
+    // Training Controls
+    document.getElementById('play-btn').onclick = playProgression;
+    document.getElementById('stop-btn').onclick = stopPlayback;
+    document.getElementById('next-btn').onclick = nextExercise;
 
-function switchView(viewName) {
-    if (viewName === 'settings') {
-        ui.views.training.classList.add('d-none');
-        ui.views.settings.classList.remove('d-none');
+    document.getElementById('reset-stats').onclick = (e) => {
+        e.preventDefault();
+        state.stats = { correct: 0, total: 0 };
+        updateStats();
+    };
 
-        // Sync UI with state
-        ui.settings.loop.checked = state.settings.loop;
-        ui.settings.bass.checked = state.settings.bass;
-        ui.settings.tempo.value = state.settings.tempo;
-        ui.settings.tempoVal.textContent = state.settings.tempo;
-        renderSettingsList();
-    } else {
-        ui.views.settings.classList.add('d-none');
-        ui.views.training.classList.remove('d-none');
+    // Initial Start
+    // We need to wait for user interaction to start audio context usually.
+    // We can initialize the first exercise but not play it yet.
+    // Or we wait for "Play" to be pressed first time?
+    // Spec: "When the app is started the Training view is displayed."
+    // "Button named 'Next' ... Enabled after answering".
+    // This implies we are in a state where a question is active.
+    // So we should generate one.
+
+    // Ensure at least one progression is selected
+    if (state.selectedProgressions.length === 0) {
+        // Select all by default
+        document.querySelectorAll('#progressions-list input').forEach(cb => cb.checked = true);
+        updateSelectedProgressions();
     }
-}
 
-// Start App
-init();
+    // Setup first exercise
+    // Pick random progression
+    const randIndex = Math.floor(Math.random() * state.selectedProgressions.length);
+    state.currentProgressionIndex = state.selectedProgressions[randIndex];
+    state.currentKeyMidi = 60 + Math.floor(Math.random() * 12);
+    state.currentVoicing = generateVoicing(state.currentProgressionIndex, state.currentKeyMidi);
+    renderTrainingView();
+
+    // Note: We don't auto-play on load because browsers block AudioContext.
+    // User must click Play.
+});
