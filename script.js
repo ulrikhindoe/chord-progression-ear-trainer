@@ -12,11 +12,17 @@ const chordProgressions = [
     { name: "I iii", chords: ["I", "iii"] },
     { name: "I vi", chords: ["I", "vi"] },
     { name: "i bVI bIII bVII", chords: ["i", "bVI", "bIII", "bVII"] },
-    { name: "I IV V I", chords: ["I", "IV", "V", "I"] },
-    { name: "ii V I", chords: ["ii", "V", "I"] },
-    { name: "I V vi IV", chords: ["I", "V", "vi", "IV"] },
-    { name: "I vi IV V", chords: ["I", "vi", "IV", "V"] },
     { name: "i iv V i", chords: ["i", "iv", "V", "i"] },
+    { name: "i v IV i", chords: ["i", "v", "IV", "i"] },
+    { name: "i bVII bVI V", chords: ["i", "bVII", "bVI", "V"] },
+    { name: "i bIII bVII IV", chords: ["i", "bIII", "bVII", "IV"] },
+    { name: "i bIII bVII iv", chords: ["i", "bIII", "bVII", "iv"] },
+    { name: "iv i bIII bVII", chords: ["iv", "i", "bIII",  "bVII"] },
+    { name: "bIV bVII i bVII", chords: ["bIV", "bVII", "i", "bVII"] },
+    { name: "I IV V I", chords: ["I", "IV", "V", "I"] },
+    { name: "I IV V IV", chords: ["I", "IV", "V", "IV"] },
+    { name: "I vi IV V", chords: ["I", "vi", "IV", "V"] },
+    { name: "I vi ii V", chords: ["I", "vi", "ii", "V"] },
     { name: "I IV I V", chords: ["I", "IV", "I", "V"] }
 ];
 
