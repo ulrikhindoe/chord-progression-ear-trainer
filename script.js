@@ -17,13 +17,20 @@ const chordProgressions = [
     { name: "i bVII bVI V", chords: ["i", "bVII", "bVI", "V"] },
     { name: "i bIII bVII IV", chords: ["i", "bIII", "bVII", "IV"] },
     { name: "i bIII bVII iv", chords: ["i", "bIII", "bVII", "iv"] },
-    { name: "iv i bIII bVII", chords: ["iv", "i", "bIII",  "bVII"] },
-    { name: "bIV bVII i bVII", chords: ["bIV", "bVII", "i", "bVII"] },
+    { name: "i iv bVII bIII", chords: ["i", "iv", "bVII", "bIII"] },
+    { name: "i bVI iv V", chords: ["i", "bVI", "iv", "V"] },
     { name: "I IV V I", chords: ["I", "IV", "V", "I"] },
     { name: "I IV V IV", chords: ["I", "IV", "V", "IV"] },
     { name: "I vi IV V", chords: ["I", "vi", "IV", "V"] },
     { name: "I vi ii V", chords: ["I", "vi", "ii", "V"] },
-    { name: "I IV I V", chords: ["I", "IV", "I", "V"] }
+    { name: "I IV I V", chords: ["I", "IV", "I", "V"] },
+    { name: "I V vi IV", chords: ["I", "V", "vi", "IV"] },
+    { name: "I V ii IV", chords: ["I", "V", "ii", "IV"] },
+    { name: "I III IV iv", chords: ["I", "III", "IV", "iv"] },
+    { name: "iv i bIII bVII", chords: ["iv", "i", "bIII",  "bVII"] },
+    { name: "bIV bVII i bVII", chords: ["bIV", "bVII", "i", "bVII"] },
+    { name: "ii V I vi", chords: ["ii", "V", "I", "vi"] },
+    { name: "IV V iii vi", chords: ["IV", "V", "iii", "vi"] },
 ];
 
 // --- State Management ---
