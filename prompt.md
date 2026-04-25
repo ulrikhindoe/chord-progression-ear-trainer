@@ -82,3 +82,7 @@ There are two views in the app: Training and Settings. When the app is started t
   - Loop Progression
   - Add Bass Note
   - Tempo Slider (BPM)
+
+### 4. State Persistence
+- **Local Storage**: Save the user's state (selected progressions, statistics, and settings) to the browser's `localStorage` whenever it changes, so progress and configuration are preserved across sessions.
+- **Robustness**: The state loading mechanism must be robust. When initializing the app, read and parse the state from `localStorage` inside a `try...catch` block. Validate that the data structure is consistent with what the current code expects. If the data is invalid, missing, or outdated due to an app update, safely discard it and fall back to the default state to prevent the app from crashing or getting stuck.
