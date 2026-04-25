@@ -4,6 +4,8 @@ I want to build an app to train recognizing chord progressions.
 
 The app is should be implemented with three files: `index.html`, `script.js` and `styles.css`.
 
+Keep `index.html` and `styles.css` as they are unless changes are needed to support changes.
+
 ## Tech Stack
 - **Language**: JavaScript (Vanilla JS).
 - **Audio Library**: Tone.js (preferred for scheduling and synthesis).
