@@ -2,9 +2,7 @@
 
 I want to build an app to train recognizing chord progressions.
 
-The app is should be implemented with three files: `index.html`, `script.js` and `styles.css`.
-
-Keep `index.html` and `styles.css` as they are unless changes are needed to support changes.
+The app is should be implemented with three files: `index.html`, `script.js` and `styles.css`. Keep `index.html` and `styles.css` as they are unless changes are needed to support new features.
 
 ## Tech Stack
 - **Language**: JavaScript (Vanilla JS).
@@ -14,42 +12,7 @@ Keep `index.html` and `styles.css` as they are unless changes are needed to supp
 ## Data Structure
 The app is configured with a list of chord progressions using Roman Numeral analysis.
 
-```javascript
-const chordProgressions = [
-    { name: "i V", chords: ["i", "V"] },
-    { name: "i v", chords: ["i", "v"] },
-    { name: "i iv", chords: ["i", "iv"] },
-    { name: "i IV", chords: ["i", "IV"] },
-    { name: "I V", chords: ["I", "V"] },
-    { name: "I IV", chords: ["I", "IV"] },
-    { name: "i bIII", chords: ["i", "bIII"] },
-    { name: "i bVI", chords: ["i", "bVI"] },
-    { name: "i bVII", chords: ["i", "bVII"] },
-    { name: "I ii", chords: ["I", "ii"] },
-    { name: "I iii", chords: ["I", "iii"] },
-    { name: "I vi", chords: ["I", "vi"] },
-    { name: "i bVI bIII bVII", chords: ["i", "bVI", "bIII", "bVII"] },
-    { name: "i iv V i", chords: ["i", "iv", "V", "i"] },
-    { name: "i v IV i", chords: ["i", "v", "IV", "i"] },
-    { name: "i bVII bVI V", chords: ["i", "bVII", "bVI", "V"] },
-    { name: "i bIII bVII IV", chords: ["i", "bIII", "bVII", "IV"] },
-    { name: "i bIII bVII iv", chords: ["i", "bIII", "bVII", "iv"] },
-    { name: "i iv bVII bIII", chords: ["i", "iv", "bVII", "bIII"] },
-    { name: "i bVI iv V", chords: ["i", "bVI", "iv", "V"] },
-    { name: "I IV V I", chords: ["I", "IV", "V", "I"] },
-    { name: "I IV V IV", chords: ["I", "IV", "V", "IV"] },
-    { name: "I vi IV V", chords: ["I", "vi", "IV", "V"] },
-    { name: "I vi ii V", chords: ["I", "vi", "ii", "V"] },
-    { name: "I IV I V", chords: ["I", "IV", "I", "V"] },
-    { name: "I V vi IV", chords: ["I", "V", "vi", "IV"] },
-    { name: "I V ii IV", chords: ["I", "V", "ii", "IV"] },
-    { name: "I III IV iv", chords: ["I", "III", "IV", "iv"] },
-    { name: "iv i bIII bVII", chords: ["iv", "i", "bIII",  "bVII"] },
-    { name: "bIV bVII i bVII", chords: ["bIV", "bVII", "i", "bVII"] },
-    { name: "ii V I vi", chords: ["ii", "V", "I", "vi"] },
-    { name: "IV V iii vi", chords: ["IV", "V", "iii", "vi"] },
-];
-```
+See `spec-data.md` for the data structure.
 
 ## Core Features
 
