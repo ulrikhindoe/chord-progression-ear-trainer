@@ -34,6 +34,8 @@ See `spec-data.md` for the data structure.
   - **Add bass note**: Toggle to play an additional root note in a lower octave (e.g., octave 2 or 3) to ground the harmony. Make the bass note louder than the other chord tones (e.g. +2dB) in order to make it stand out.
   - **Bossa Nova Drum Rhythm**: Toggle to play a bossa nova drum rhythm along with the chord progression. **Crucially, the rhythm must be perfectly in sync with the chords from the very first loop, not just subsequent loops.**
   - **Drum Volume**: Adjustable slider to control the volume of the drum set.
+  - **Improvised Voice**: Toggle to add an improvised voice over the chords. The instrument must be different than the instruments playing the chords. The improvisation should be melodious, so use mainly chord tones and scale tones. Passing chromatic tones can also be used. The improvisation should change each time the loop is played.
+  - **Improvised Voice Volume**: Adjustable slider to control the volume of the improvising instrument.
   - **Tempo**: Adjustable playback speed (BPM). Changing BPM should scale the duration of the chords. The range should be from 120 BPM to 250 BPM.
 
 ### 3. User Interaction
@@ -87,6 +89,8 @@ There are two views in the app: Training and Settings. When the app is started t
   - Add Bass Note
   - Bossa Nova Drum Rhythm
   - Drum Volume Slider
+  - Improvised Voice
+  - Improvised Voice Volume Slider
   - Tempo Slider (BPM)
 
 ### 4. State Persistence
