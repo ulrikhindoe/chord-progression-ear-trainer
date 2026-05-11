@@ -39,6 +39,8 @@ const defaultState = {
     settings: {
         loop: false,
         bass: false,
+        bossa: false,
+        drumVolume: -10,
         tempo: 120
     }
 };
@@ -53,6 +55,9 @@ let hasAnswered = false;
 // --- Tone.js Setup ---
 let polySynth;
 let bassSynth;
+let kickSynth;
+let hihatSynth;
+let snareSynth;
 
 function initAudio() {
     if (!polySynth) {
@@ -63,6 +68,30 @@ function initAudio() {
         bassSynth = new Tone.Synth().toDestination();
         bassSynth.volume.value = 0;
     }
+    if (!kickSynth) {
+        kickSynth = new Tone.MembraneSynth().toDestination();
+    }
+    if (!hihatSynth) {
+        hihatSynth = new Tone.NoiseSynth({
+            noise: { type: 'white' },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
+        }).toDestination();
+    }
+    if (!snareSynth) {
+        snareSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.01,
+            octaves: 1,
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }
+        }).toDestination();
+    }
+    updateDrumVolume();
+}
+
+function updateDrumVolume() {
+    if (kickSynth) kickSynth.volume.value = state.settings.drumVolume;
+    if (hihatSynth) hihatSynth.volume.value = state.settings.drumVolume - 10;
+    if (snareSynth) snareSynth.volume.value = state.settings.drumVolume - 2;
 }
 
 // --- State Persistence ---
@@ -80,6 +109,8 @@ function loadState() {
                 parsed.settings &&
                 typeof parsed.settings.loop === 'boolean' &&
                 typeof parsed.settings.bass === 'boolean' &&
+                typeof parsed.settings.bossa === 'boolean' &&
+                typeof parsed.settings.drumVolume === 'number' &&
                 typeof parsed.settings.tempo === 'number'
             ) {
                 state = parsed;
@@ -219,6 +250,25 @@ function startTransport() {
                 bassSynth.triggerAttackRelease(bassNote, "1m", time);
             }
         }, `${i}:0:0`);
+
+        if (state.settings.bossa) {
+            // Kick pattern
+            Tone.Transport.schedule((time) => { kickSynth.triggerAttackRelease("C1", "8n", time); }, `${i}:0:0`);
+            Tone.Transport.schedule((time) => { kickSynth.triggerAttackRelease("C1", "8n", time); }, `${i}:1:2`);
+            Tone.Transport.schedule((time) => { kickSynth.triggerAttackRelease("C1", "8n", time); }, `${i}:2:0`);
+            Tone.Transport.schedule((time) => { kickSynth.triggerAttackRelease("C1", "8n", time); }, `${i}:3:2`);
+
+            // Hi-hat pattern
+            for (let b = 0; b < 4; b++) {
+                Tone.Transport.schedule((time) => { hihatSynth.triggerAttackRelease("32n", time); }, `${i}:${b}:0`);
+                Tone.Transport.schedule((time) => { hihatSynth.triggerAttackRelease("32n", time); }, `${i}:${b}:2`);
+            }
+
+            // Snare/Rim pattern (Bossa clave simplified to 1 measure)
+            Tone.Transport.schedule((time) => { snareSynth.triggerAttackRelease("G4", "16n", time); }, `${i}:0:0`);
+            Tone.Transport.schedule((time) => { snareSynth.triggerAttackRelease("G4", "16n", time); }, `${i}:1:2`);
+            Tone.Transport.schedule((time) => { snareSynth.triggerAttackRelease("G4", "16n", time); }, `${i}:3:0`);
+        }
     });
 
     if (!state.settings.loop) {
@@ -379,6 +429,8 @@ function handleAnswer(selectedIndex, btnElement) {
 function renderSettingsView() {
     document.getElementById('loop-checkbox').checked = state.settings.loop;
     document.getElementById('bass-checkbox').checked = state.settings.bass;
+    document.getElementById('bossa-checkbox').checked = state.settings.bossa;
+    document.getElementById('drum-volume-slider').value = state.settings.drumVolume;
     document.getElementById('tempo-slider').value = state.settings.tempo;
     document.getElementById('tempo-value').textContent = state.settings.tempo;
 
@@ -454,6 +506,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('bass-checkbox').onchange = (e) => {
         state.settings.bass = e.target.checked;
+        saveState();
+    };
+
+    document.getElementById('bossa-checkbox').onchange = (e) => {
+        state.settings.bossa = e.target.checked;
+        saveState();
+    };
+
+    const drumVolumeSlider = document.getElementById('drum-volume-slider');
+    drumVolumeSlider.oninput = (e) => {
+        state.settings.drumVolume = parseInt(e.target.value, 10);
+        updateDrumVolume();
         saveState();
     };
 
