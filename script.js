@@ -40,6 +40,8 @@ const defaultState = {
         loop: false,
         bass: false,
         bossa: false,
+        improv: false,
+        improvVolume: -10,
         drumVolume: -10,
         tempo: 120
     }
@@ -50,6 +52,7 @@ let currentProgressionIndex = -1;
 let currentKeyMidi = 60;
 let currentVoicing = [];
 let isPlaying = false;
+let improvLoop = null;
 let hasAnswered = false;
 
 // --- Tone.js Setup ---
@@ -58,6 +61,7 @@ let bassSynth;
 let kickSynth;
 let hihatSynth;
 let snareSynth;
+let improvSynth;
 
 function initAudio() {
     if (!polySynth) {
@@ -85,13 +89,25 @@ function initAudio() {
             envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }
         }).toDestination();
     }
+    if (!improvSynth) {
+        improvSynth = new Tone.FMSynth({
+            harmonicity: 1.5,
+            modulationIndex: 8,
+            envelope: { attack: 0.01, decay: 0.2, release: 0.1 },
+            modulationEnvelope: { attack: 0.01, decay: 0.5, release: 0.1 }
+        }).toDestination();
+    }
     updateDrumVolume();
+    updateImprovVolume();
 }
 
 function updateDrumVolume() {
     if (kickSynth) kickSynth.volume.value = state.settings.drumVolume;
     if (hihatSynth) hihatSynth.volume.value = state.settings.drumVolume - 10;
     if (snareSynth) snareSynth.volume.value = state.settings.drumVolume - 2;
+}
+function updateImprovVolume() {
+    if (improvSynth) improvSynth.volume.value = state.settings.improvVolume;
 }
 
 // --- State Persistence ---
@@ -110,6 +126,8 @@ function loadState() {
                 typeof parsed.settings.loop === 'boolean' &&
                 typeof parsed.settings.bass === 'boolean' &&
                 typeof parsed.settings.bossa === 'boolean' &&
+                typeof parsed.settings.improv === 'boolean' &&
+                typeof parsed.settings.improvVolume === 'number' &&
                 typeof parsed.settings.drumVolume === 'number' &&
                 typeof parsed.settings.tempo === 'number'
             ) {
@@ -234,6 +252,11 @@ function startTransport() {
     Tone.Transport.bpm.value = state.settings.tempo;
     Tone.Transport.cancel();
 
+    if (improvLoop) {
+        improvLoop.dispose();
+        improvLoop = null;
+    }
+
     const loopLength = currentVoicing.length;
 
     currentVoicing.forEach((chord, i) => {
@@ -271,6 +294,57 @@ function startTransport() {
         }
     });
 
+    if (state.settings.improv) {
+        const isMajorKey = !chordProgressions[currentProgressionIndex].chords[0].startsWith('i');
+        const scaleIntervals = isMajorKey ? [0, 2, 4, 5, 7, 9, 11] : [0, 2, 3, 5, 7, 8, 10];
+
+        const scaleNotes = [];
+        for (let octave = 0; octave < 2; octave++) {
+            scaleNotes.push(...scaleIntervals.map(interval => (currentKeyMidi + 12) + octave * 12 + interval));
+        }
+
+        let lastNote = currentKeyMidi + 12 + scaleIntervals[Math.floor(Math.random() * scaleIntervals.length)];
+
+        improvLoop = new Tone.Loop(time => {
+            const progress = Tone.Transport.progress;
+            const loopLength = currentVoicing.length;
+            const measureIndex = Math.floor(progress * loopLength);
+            const chord = currentVoicing[measureIndex];
+            if (!chord) return;
+
+            const rhythms = [
+                [{ offset: '0:0', duration: '8n' }, { offset: '0:1', duration: '8n' }, { offset: '0:2', duration: '4n' }],
+                [{ offset: '0:0', duration: '4n' }, { offset: '0:2', duration: '4n' }],
+                [{ offset: '0:0', duration: '8n' }, { offset: '0:1', duration: '8n' }, { offset: '0:2', duration: '8n' }, { offset: '0:3', duration: '8n' }],
+                [{ offset: '0:0', duration: '2n' }],
+                [{ offset: '0:0', duration: '4n' }, { offset: '0:1', duration: '4n' }, { offset: '0:2', duration: '4n' }, { offset: '0:3', duration: '4n' }]
+            ];
+            const currentRhythm = rhythms[Math.floor(Math.random() * rhythms.length)];
+
+            const chordTones = chord.notes;
+            const noteSelectionPool = [...chordTones, ...chordTones, ...scaleNotes];
+
+            currentRhythm.forEach(r => {
+                let bestNote = lastNote;
+                let minDistance = Infinity;
+                for (let i = 0; i < 10; i++) {
+                    const candidate = noteSelectionPool[Math.floor(Math.random() * noteSelectionPool.length)];
+                    if (!candidate) continue;
+                    const dist = Math.abs(candidate - lastNote);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bestNote = candidate;
+                    }
+                }
+                while (bestNote > 84) bestNote -= 12;
+                while (bestNote < 60) bestNote += 12;
+
+                improvSynth.triggerAttackRelease(Tone.Frequency(bestNote, 'midi'), r.duration, time + Tone.Time(r.offset).toSeconds());
+                lastNote = bestNote;
+            });
+        }, "1m").start(0);
+    }
+
     if (!state.settings.loop) {
         Tone.Transport.schedule((time) => {
             Tone.Draw.schedule(() => {
@@ -295,6 +369,12 @@ function stopPlayback() {
     Tone.Transport.cancel();
     if (polySynth) polySynth.releaseAll();
     if (bassSynth) bassSynth.triggerRelease();
+    if (improvLoop) {
+        improvLoop.dispose();
+        improvLoop = null;
+    }
+    if (improvSynth) improvSynth.triggerRelease();
+
     highlightChordButton(-1);
     isPlaying = false;
 }
@@ -430,6 +510,8 @@ function renderSettingsView() {
     document.getElementById('loop-checkbox').checked = state.settings.loop;
     document.getElementById('bass-checkbox').checked = state.settings.bass;
     document.getElementById('bossa-checkbox').checked = state.settings.bossa;
+    document.getElementById('improv-checkbox').checked = state.settings.improv;
+    document.getElementById('improv-volume-slider').value = state.settings.improvVolume;
     document.getElementById('drum-volume-slider').value = state.settings.drumVolume;
     document.getElementById('tempo-slider').value = state.settings.tempo;
     document.getElementById('tempo-value').textContent = state.settings.tempo;
@@ -513,6 +595,19 @@ document.addEventListener('DOMContentLoaded', () => {
         state.settings.bossa = e.target.checked;
         saveState();
     };
+
+    document.getElementById('improv-checkbox').onchange = (e) => {
+        state.settings.improv = e.target.checked;
+        saveState();
+    };
+
+    const improvVolumeSlider = document.getElementById('improv-volume-slider');
+    improvVolumeSlider.oninput = (e) => {
+        state.settings.improvVolume = parseInt(e.target.value, 10);
+        updateImprovVolume();
+        saveState();
+    };
+
 
     const drumVolumeSlider = document.getElementById('drum-volume-slider');
     drumVolumeSlider.oninput = (e) => {
