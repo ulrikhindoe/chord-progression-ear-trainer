@@ -41,6 +41,7 @@ const defaultState = {
         bass: false,
         bossa: false,
         improv: false,
+        chordsVolume: -2,
         improvVolume: -10,
         drumVolume: -10,
         tempo: 120
@@ -65,8 +66,7 @@ let improvSynth;
 
 function initAudio() {
     if (!polySynth) {
-        polySynth = new Tone.PolySynth(Tone.Synth).toDestination();
-        polySynth.volume.value = -2;
+        polySynth = new Tone.PolySynth().toDestination();
     }
     if (!bassSynth) {
         bassSynth = new Tone.Synth().toDestination();
@@ -97,10 +97,16 @@ function initAudio() {
             modulationEnvelope: { attack: 0.01, decay: 0.5, release: 0.1 }
         }).toDestination();
     }
+    updateChordsVolume();
     updateDrumVolume();
     updateImprovVolume();
 }
 
+function updateChordsVolume() {
+    if (polySynth) {
+        polySynth.volume.value = state.settings.chordsVolume;
+    }
+}
 function updateDrumVolume() {
     if (kickSynth) kickSynth.volume.value = state.settings.drumVolume;
     if (hihatSynth) hihatSynth.volume.value = state.settings.drumVolume - 10;
@@ -127,6 +133,7 @@ function loadState() {
                 typeof parsed.settings.bass === 'boolean' &&
                 typeof parsed.settings.bossa === 'boolean' &&
                 typeof parsed.settings.improv === 'boolean' &&
+                typeof parsed.settings.chordsVolume === 'number' &&
                 typeof parsed.settings.improvVolume === 'number' &&
                 typeof parsed.settings.drumVolume === 'number' &&
                 typeof parsed.settings.tempo === 'number'
@@ -511,6 +518,7 @@ function renderSettingsView() {
     document.getElementById('bass-checkbox').checked = state.settings.bass;
     document.getElementById('bossa-checkbox').checked = state.settings.bossa;
     document.getElementById('improv-checkbox').checked = state.settings.improv;
+    document.getElementById('chords-volume-slider').value = state.settings.chordsVolume;
     document.getElementById('improv-volume-slider').value = state.settings.improvVolume;
     document.getElementById('drum-volume-slider').value = state.settings.drumVolume;
     document.getElementById('tempo-slider').value = state.settings.tempo;
@@ -550,6 +558,7 @@ function renderSettingsView() {
 // --- Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
     loadState();
+    initAudio(); // Initialize audio context and synths early
 
     const trainingView = document.getElementById('training-view');
     const settingsView = document.getElementById('settings-view');
@@ -598,6 +607,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('improv-checkbox').onchange = (e) => {
         state.settings.improv = e.target.checked;
+        saveState();
+    };
+
+    const chordsVolumeSlider = document.getElementById('chords-volume-slider');
+    chordsVolumeSlider.oninput = (e) => {
+        state.settings.chordsVolume = parseInt(e.target.value, 10);
+        updateChordsVolume();
         saveState();
     };
 
