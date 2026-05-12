@@ -69,7 +69,7 @@ There are two views in the app: Training and Settings. When the app is started t
   - There is a button for each chord in the progression labelled 1,2,3...
   - The buttons must be wide enough so they are easy to press
   - When a chord is played the corresponding button is highlighted
-  - When pressing a chord button the chord progression is stopped and therelated chord is played as long the button is pressed
+  - When pressing a chord button the chord progression is stopped and the related chord is played as long the button is pressed
 - Progression choice section
   - There is a button for each of the progression in the exercise
   - User clicks the button they think matches the progression played.

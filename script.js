@@ -436,6 +436,7 @@ function renderTrainingView() {
 
         const start = async () => {
             await Tone.start();
+            stopPlayback();
             playSingleChord(i);
         };
         const stop = () => stopSingleChord();
