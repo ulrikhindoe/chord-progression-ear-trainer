@@ -76,6 +76,7 @@ There are two views in the app: Training and Settings. When the app is started t
   - The width of the button should be adjusted to fit the text in the button
   - If the correct progression is pressed the button will turn green
   - If an incorrect progression is pressed the button will turn red and the correct progression will turn green
+  - The order of the progression buttons must be the same as in `spec-data.md`.
   - Green and red buttons will return to the normal color when the Next button is pressed
   - Under the buttons provide immediate visual feedback (Correct/Incorrect).
 
@@ -85,6 +86,7 @@ There are two views in the app: Training and Settings. When the app is started t
   - When pressed the exercise is updated according to the new settings but the current statistics are kept.- Select progressions to train on
 - All progressions defined
   - "Select all" and "Deselect all" buttons
+  - The list of progressions must be in the same order as in `spec-data.md`.
 - Options
   - Loop Progression
   - Add Bass Note

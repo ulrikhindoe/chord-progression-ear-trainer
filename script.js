@@ -22,7 +22,7 @@ const chordProgressions = [
     { name: "i bIII iv bVI", chords: ["i", "bIII", "iv", "bVI"] },
     { name: "i iv bVII bIII", chords: ["i", "iv", "bVII", "bIII"] },
     { name: "i bVI iv V", chords: ["i", "bVI", "iv", "V"] },
-    { name: "I V VI I", chords: ["I", "V", "VI", "I"] },
+    { name: "I V IV I", chords: ["I", "V", "IV", "I"] },
     { name: "I IV V I", chords: ["I", "IV", "V", "I"] },
     { name: "I ii V I", chords: ["I", "ii", "V", "I"] },
     { name: "I IV V IV", chords: ["I", "IV", "V", "IV"] },
