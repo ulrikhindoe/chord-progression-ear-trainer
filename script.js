@@ -58,6 +58,7 @@ let state = null;
 let currentProgressionIndex = -1;
 let currentKeyMidi = 60;
 let currentVoicing = [];
+let previewingProgressionIndex = -1;
 let isPlaying = false;
 let improvLoop = null;
 let hasAnswered = false;
@@ -252,6 +253,10 @@ async function playProgression() {
     await Tone.start();
     initAudio();
 
+    if (previewingProgressionIndex !== -1) {
+        stopProgressionPreview();
+    }
+
     if (isPlaying) {
         stopPlayback();
         setTimeout(startTransport, 50);
@@ -262,6 +267,7 @@ async function playProgression() {
 
 function startTransport() {
     isPlaying = true;
+    previewingProgressionIndex = -1;
     Tone.Transport.bpm.value = state.settings.tempo;
     Tone.Transport.cancel();
 
@@ -390,6 +396,55 @@ function stopPlayback() {
 
     highlightChordButton(-1);
     isPlaying = false;
+    previewingProgressionIndex = -1;
+}
+
+async function playProgressionPreview(progressionIndex) {
+    if (isPlaying) {
+        stopPlayback();
+    }
+    if (previewingProgressionIndex !== -1) {
+        stopProgressionPreview();
+    }
+
+    await Tone.start();
+    initAudio();
+
+    previewingProgressionIndex = progressionIndex;
+
+    const previewKey = 60;
+    const previewVoicing = generateVoicing(progressionIndex, previewKey);
+    const loopLength = previewVoicing.length;
+
+    Tone.Transport.bpm.value = state.settings.tempo;
+    Tone.Transport.cancel();
+
+    previewVoicing.forEach((chord, i) => {
+        Tone.Transport.schedule(time => {
+            const notes = chord.notes.map(n => Tone.Frequency(n, "midi").toNote());
+            polySynth.triggerAttackRelease(notes, "1m", time);
+
+            if (state.settings.bass) {
+                const bassNote = Tone.Frequency(chord.bass, "midi").toNote();
+                bassSynth.triggerAttackRelease(bassNote, "1m", time);
+            }
+        }, `${i}:0:0`);
+    });
+
+    Tone.Transport.loop = false;
+    Tone.Transport.position = 0;
+    Tone.Transport.start();
+}
+
+function stopProgressionPreview() {
+    if (previewingProgressionIndex !== -1) {
+        previewingProgressionIndex = -1;
+        Tone.Transport.stop();
+        Tone.Transport.cancel();
+        if (polySynth) polySynth.releaseAll();
+        if (bassSynth) bassSynth.triggerRelease();
+        highlightChordButton(-1);
+    }
 }
 
 function playSingleChord(index) {
@@ -464,7 +519,41 @@ function renderTrainingView() {
         const btn = document.createElement('button');
         btn.className = 'btn btn-outline-primary progression-btn';
         btn.textContent = prog.name;
-        btn.onclick = () => handleAnswer(idx, btn);
+
+        let longPressTimer;
+        let isLongPress = false;
+
+        const onPointerDown = (e) => {
+            e.preventDefault();
+            isLongPress = false;
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                playProgressionPreview(idx);
+            }, 500);
+        };
+
+        const onPointerUp = (e) => {
+            clearTimeout(longPressTimer);
+            if (isLongPress) {
+                e.preventDefault();
+                stopProgressionPreview();
+            }
+        };
+
+        const onPointerLeave = () => {
+            clearTimeout(longPressTimer);
+            if (isLongPress) {
+                stopProgressionPreview();
+            }
+        };
+
+        btn.addEventListener('mousedown', onPointerDown);
+        btn.addEventListener('mouseup', onPointerUp);
+        btn.addEventListener('mouseleave', onPointerLeave);
+        btn.addEventListener('touchstart', onPointerDown, { passive: false });
+        btn.addEventListener('touchend', onPointerUp);
+
+        btn.onclick = () => !isLongPress && handleAnswer(idx, btn);
         progsContainer.appendChild(btn);
     });
 
