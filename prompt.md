@@ -97,8 +97,14 @@ There are two views in the app: Training and Settings. When the app is started t
       - The "Submit" button is disabled until the user's answer sequence has the same number of chords as the progression that was played.
       - When the "Submit" button is pressed, the answer is checked.
     - **Feedback**:
-      - If the answer is correct, the Answer Display area gets a green border, and "Correct!" is shown.
-      - If the answer is incorrect, the Answer Display area gets a red border, and the correct progression is shown (e.g., "Incorrect. The correct progression was: I - V - vi - IV").
+      - If the answer is correct:
+        - The background of the selected chord badges in the "Answer Display" changes to green.
+        - A "Correct!" message is displayed below.
+      - If the answer is incorrect:
+        - The background of the selected chord badges in the "Answer Display" changes to red.
+        - The correct progression is shown below the user's answer, with each correct chord displayed as a green badge.
+        - A minimum height is reserved for the correct answer display area to prevent layout shifts.
+        - An "Incorrect." message is displayed below.
 
 #### 3.2 Settings View
 - No section should have internal scrolling (the page should scroll naturally).

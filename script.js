@@ -649,7 +649,7 @@ function renderTrainingView() {
             paletteContainer.appendChild(btn);
         });
         renderCurrentAnswer();
-        document.getElementById('answer-display-container').classList.remove('border-success', 'border-danger', 'border-3');
+        document.getElementById('correct-answer-display').innerHTML = '';
     }
 
     document.getElementById('feedback-display').textContent = '';
@@ -681,17 +681,30 @@ function handleSubmitAnswer() {
     const isCorrect = JSON.stringify(currentUserAnswer) === JSON.stringify(correctProgression.chords);
 
     const feedbackEl = document.getElementById('feedback-display');
-    const answerContainer = document.getElementById('answer-display-container');
+    const answerBadges = document.querySelectorAll('#answer-display-container .badge');
 
     if (isCorrect) {
         state.stats.correct++;
         feedbackEl.textContent = 'Correct!';
         feedbackEl.className = 'h4 fw-bold text-success';
-        answerContainer.classList.add('border-success', 'border-3');
+        answerBadges.forEach(badge => {
+            badge.classList.remove('bg-primary');
+            badge.classList.add('bg-success');
+        });
     } else {
-        feedbackEl.innerHTML = `Incorrect. The correct progression was: <br><strong>${correctProgression.name}</strong> (${correctProgression.chords.join(' - ')})`;
+        feedbackEl.textContent = 'Incorrect.';
         feedbackEl.className = 'h4 fw-bold text-danger';
-        answerContainer.classList.add('border-danger', 'border-3');
+        answerBadges.forEach(badge => {
+            badge.classList.remove('bg-primary');
+            badge.classList.add('bg-danger');
+        });
+        const correctAnswerContainer = document.getElementById('correct-answer-display');
+        correctProgression.chords.forEach(chord => {
+            const chordTag = document.createElement('span');
+            chordTag.className = 'badge bg-success fs-6';
+            chordTag.textContent = chord;
+            correctAnswerContainer.appendChild(chordTag);
+        });
     }
 
     saveState();
