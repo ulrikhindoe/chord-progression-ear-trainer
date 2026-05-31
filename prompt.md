@@ -87,7 +87,8 @@ There are two views in the app: Training and Settings. When the app is started t
   - **Mode 2: Chord Palette**
     - The user constructs the progression from individual chord symbols.
     - **Answer Display**: An area that shows the sequence of chords the user has selected. Initially empty or showing a placeholder text.
-    - **Chord Palette**: A set of buttons for each unique chord symbol present in the currently selected set of progressions for the exercise (e.g., I, V, vi, IV, i, bVI, etc.).
+    - **Chord Palette**: A set of buttons for each unique chord symbol. The chords to be shown in the chord palette should only be chords that are in the set of selected progressions.
+      - The chords should be sorted first by quality (Major, then minor), and then by the chromatic interval of their root. For example: `I, bIII, III, IV, V, bVI, bVII, i, ii, iii, iv, v, vi`.
       - Clicking a chord button adds it to the user's answer sequence.
     - **Answer Editing**:
       - An "Undo" button removes the last chord from the answer sequence.

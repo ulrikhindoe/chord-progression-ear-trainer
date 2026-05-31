@@ -633,7 +633,20 @@ function renderTrainingView() {
         const paletteContainer = document.getElementById('chord-palette-container');
         paletteContainer.innerHTML = '';
         const uniqueChords = [...new Set(state.selectedProgressions.flatMap(i => chordProgressions[i].chords))];
-        uniqueChords.sort();
+        uniqueChords.sort((a, b) => {
+            const parsedA = parseRoman(a);
+            const parsedB = parseRoman(b);
+
+            // Major chords first
+            if (parsedA.isMajor && !parsedB.isMajor) {
+                return -1;
+            }
+            if (!parsedA.isMajor && parsedB.isMajor) {
+                return 1;
+            }
+            // Then sort by interval
+            return parsedA.interval - parsedB.interval;
+        });
 
         uniqueChords.forEach(chord => {
             const btn = document.createElement('button');
