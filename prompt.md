@@ -73,6 +73,7 @@ There are two views in the app: Training and Settings. When the app is started t
 - Progression choice section
   - There is a button for each of the progression in the exercise
   - User clicks the button they think matches the progression played.
+  - While long-pressing a progression button, the chord progression for that button is played. When the button is released, playback stops, and the user can continue with the current exercise.
   - The width of the button should be adjusted to fit the text in the button
   - If the correct progression is pressed the button will turn green
   - If an incorrect progression is pressed the button will turn red and the correct progression will turn green
