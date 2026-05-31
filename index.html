@@ -43,8 +43,23 @@
             <div class="row">
                 <div class="col text-center">
                     <h5 class="mb-3 text-muted">Identify the Progression</h5>
-                    <div id="progression-buttons-container" class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                        <!-- Answer buttons injected here -->
+                    <div id="progression-buttons-ui">
+                        <div id="progression-buttons-container" class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                            <!-- Answer buttons injected here -->
+                        </div>
+                    </div>
+                    <div id="chord-palette-ui">
+                        <div id="answer-display-container" class="d-flex align-items-center justify-content-center gap-2 mb-3 p-3 bg-light rounded" style="min-height: 60px;">
+                            <!-- User's answer will be displayed here -->
+                        </div>
+                         <div class="d-flex justify-content-center gap-2 mb-3">
+                            <button id="clear-answer-btn" class="btn btn-sm btn-outline-secondary">Clear</button>
+                            <button id="undo-answer-btn" class="btn btn-sm btn-outline-secondary">Undo</button>
+                        </div>
+                        <div id="chord-palette-container" class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                            <!-- Chord symbol palette buttons will be injected here -->
+                        </div>
+                        <button id="submit-answer-btn" class="btn btn-primary btn-lg" disabled>Submit Answer</button>
                     </div>
                     <div id="feedback-display" class="h4 fw-bold" style="min-height: 1.5em;"></div>
                 </div>
@@ -75,6 +90,13 @@
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" id="improv-checkbox">
                         <label class="form-check-label" for="improv-checkbox">Improvised Voice</label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="answer-mode-select" class="form-label">Answer Input Mode</label>
+                        <select class="form-select" id="answer-mode-select">
+                            <option value="buttons">Progression Buttons</option>
+                            <option value="palette">Chord Palette</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label for="chords-volume-slider" class="form-label">Chords Volume</label>

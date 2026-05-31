@@ -47,6 +47,7 @@ const defaultState = {
         bass: false,
         bossa: false,
         improv: false,
+        answerMode: 'buttons',
         chordsVolume: -2,
         improvVolume: -10,
         drumVolume: -10,
@@ -62,6 +63,7 @@ let previewingProgressionIndex = -1;
 let isPlaying = false;
 let improvLoop = null;
 let hasAnswered = false;
+let currentUserAnswer = [];
 
 // --- Tone.js Setup ---
 let polySynth;
@@ -140,6 +142,7 @@ function loadState() {
                 typeof parsed.settings.bass === 'boolean' &&
                 typeof parsed.settings.bossa === 'boolean' &&
                 typeof parsed.settings.improv === 'boolean' &&
+                typeof parsed.settings.answerMode === 'string' &&
                 typeof parsed.settings.chordsVolume === 'number' &&
                 typeof parsed.settings.improvVolume === 'number' &&
                 typeof parsed.settings.drumVolume === 'number' &&
@@ -149,6 +152,9 @@ function loadState() {
                 // Enforce valid bounds
                 if (state.settings.tempo < 120) state.settings.tempo = 120;
                 if (state.settings.tempo > 250) state.settings.tempo = 250;
+                if (state.settings.answerMode !== 'buttons' && state.settings.answerMode !== 'palette') {
+                    state.settings.answerMode = 'buttons';
+                }
                 state.selectedProgressions = state.selectedProgressions.filter(i => i >= 0 && i < chordProgressions.length);
                 return;
             }
@@ -464,6 +470,60 @@ function stopSingleChord() {
 }
 
 // --- UI Rendering & Game Logic ---
+function renderCurrentAnswer() {
+    const answerContainer = document.getElementById('answer-display-container');
+    answerContainer.innerHTML = '';
+    if (currentUserAnswer.length === 0) {
+        answerContainer.innerHTML = '<span class="text-muted">Select chords from the palette below</span>';
+    } else {
+        currentUserAnswer.forEach(chord => {
+            const chordTag = document.createElement('span');
+            chordTag.className = 'badge bg-primary fs-6';
+            chordTag.textContent = chord;
+            answerContainer.appendChild(chordTag);
+        });
+    }
+
+    // Enable/disable submit button
+    const submitBtn = document.getElementById('submit-answer-btn');
+    if (currentVoicing.length > 0) {
+        submitBtn.disabled = currentUserAnswer.length !== currentVoicing.length;
+    } else {
+        submitBtn.disabled = true;
+    }
+}
+
+function handleAnswer(selectedIndex, btnElement) {
+    if (hasAnswered) return;
+    hasAnswered = true;
+
+    state.stats.total++;
+    const isCorrect = selectedIndex === currentProgressionIndex;
+    const feedbackEl = document.getElementById('feedback-display');
+
+    if (isCorrect) {
+        state.stats.correct++;
+        btnElement.classList.replace('btn-outline-primary', 'btn-success-custom');
+        feedbackEl.textContent = 'Correct!';
+        feedbackEl.className = 'h4 fw-bold text-success';
+    } else {
+        btnElement.classList.replace('btn-outline-primary', 'btn-danger-custom');
+        const correctProgression = chordProgressions[currentProgressionIndex];
+        feedbackEl.innerHTML = `Incorrect. The correct progression was: <br><strong>${correctProgression.name}</strong>`;
+        feedbackEl.className = 'h4 fw-bold text-danger';
+
+        const correctButton = document.querySelector(`.progression-btn[data-prog-index="${currentProgressionIndex}"]`);
+        if (correctButton) {
+            correctButton.classList.replace('btn-outline-primary', 'btn-success-custom');
+        }
+    }
+
+    saveState();
+    renderStats();
+    document.getElementById('next-btn').disabled = false;
+}
+
+// --- UI Rendering & Game Logic ---
 function generateNewExercise() {
     if (state.selectedProgressions.length === 0) {
         state.selectedProgressions = chordProgressions.map((_, i) => i);
@@ -475,6 +535,7 @@ function generateNewExercise() {
     currentKeyMidi = 60 + Math.floor(Math.random() * 12);
     currentVoicing = generateVoicing(currentProgressionIndex, currentKeyMidi);
     hasAnswered = false;
+    currentUserAnswer = [];
 
     renderTrainingView();
 }
@@ -511,55 +572,88 @@ function renderTrainingView() {
         chordsContainer.appendChild(btn);
     });
 
-    const progsContainer = document.getElementById('progression-buttons-container');
-    progsContainer.innerHTML = '';
+    const progressionButtonsUI = document.getElementById('progression-buttons-ui');
+    const chordPaletteUI = document.getElementById('chord-palette-ui');
 
-    state.selectedProgressions.forEach(idx => {
-        const prog = chordProgressions[idx];
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-outline-primary progression-btn';
-        btn.textContent = prog.name;
+    if (state.settings.answerMode === 'buttons') {
+        progressionButtonsUI.style.display = 'block';
+        chordPaletteUI.style.display = 'none';
 
-        let longPressTimer;
-        let isLongPress = false;
+        const progsContainer = document.getElementById('progression-buttons-container');
+        progsContainer.innerHTML = '';
 
-        const onPointerDown = (e) => {
-            e.preventDefault();
-            isLongPress = false;
-            longPressTimer = setTimeout(() => {
-                isLongPress = true;
-                playProgressionPreview(idx);
-            }, 500);
-        };
+        chordProgressions.forEach((prog, idx) => {
+            if (state.selectedProgressions.includes(idx)) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-outline-primary progression-btn';
+                btn.textContent = prog.name;
+                btn.dataset.progIndex = idx;
 
-        const onPointerUp = (e) => {
-            clearTimeout(longPressTimer);
-            if (isLongPress) {
-                e.preventDefault();
-                stopProgressionPreview();
+                let longPressTimer;
+                let isLongPress = false;
+
+                const onPointerDown = (e) => {
+                    e.preventDefault();
+                    isLongPress = false;
+                    longPressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        playProgressionPreview(idx);
+                    }, 500);
+                };
+
+                const onPointerUp = (e) => {
+                    clearTimeout(longPressTimer);
+                    if (isLongPress) {
+                        e.preventDefault();
+                        stopProgressionPreview();
+                    }
+                };
+
+                const onPointerLeave = () => {
+                    clearTimeout(longPressTimer);
+                    if (isLongPress) {
+                        stopProgressionPreview();
+                    }
+                };
+
+                btn.addEventListener('mousedown', onPointerDown);
+                btn.addEventListener('mouseup', onPointerUp);
+                btn.addEventListener('mouseleave', onPointerLeave);
+                btn.addEventListener('touchstart', onPointerDown, { passive: false });
+                btn.addEventListener('touchend', onPointerUp);
+
+                btn.onclick = () => !isLongPress && handleAnswer(idx, btn);
+                progsContainer.appendChild(btn);
             }
-        };
+        });
+    } else { // 'palette' mode
+        progressionButtonsUI.style.display = 'none';
+        chordPaletteUI.style.display = 'block';
 
-        const onPointerLeave = () => {
-            clearTimeout(longPressTimer);
-            if (isLongPress) {
-                stopProgressionPreview();
-            }
-        };
+        const paletteContainer = document.getElementById('chord-palette-container');
+        paletteContainer.innerHTML = '';
+        const uniqueChords = [...new Set(state.selectedProgressions.flatMap(i => chordProgressions[i].chords))];
+        uniqueChords.sort();
 
-        btn.addEventListener('mousedown', onPointerDown);
-        btn.addEventListener('mouseup', onPointerUp);
-        btn.addEventListener('mouseleave', onPointerLeave);
-        btn.addEventListener('touchstart', onPointerDown, { passive: false });
-        btn.addEventListener('touchend', onPointerUp);
-
-        btn.onclick = () => !isLongPress && handleAnswer(idx, btn);
-        progsContainer.appendChild(btn);
-    });
+        uniqueChords.forEach(chord => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-outline-primary';
+            btn.textContent = chord;
+            btn.onclick = () => {
+                if (hasAnswered) return;
+                if (currentUserAnswer.length < currentVoicing.length) {
+                    currentUserAnswer.push(chord);
+                    renderCurrentAnswer();
+                }
+            };
+            paletteContainer.appendChild(btn);
+        });
+        renderCurrentAnswer();
+        document.getElementById('answer-display-container').classList.remove('border-success', 'border-danger', 'border-3');
+    }
 
     document.getElementById('feedback-display').textContent = '';
     document.getElementById('feedback-display').className = 'h4 fw-bold';
-
     document.getElementById('next-btn').disabled = true;
     document.getElementById('stop-btn').style.display = state.settings.loop ? 'inline-block' : 'none';
 }
@@ -578,35 +672,32 @@ function renderStats() {
     document.getElementById('stats-display').textContent = `Correct: ${correct}/${total} (${percentage}%)`;
 }
 
-function handleAnswer(selectedIndex, btnElement) {
-    if (hasAnswered) return;
+function handleSubmitAnswer() {
+    if (hasAnswered || currentUserAnswer.length !== currentVoicing.length) return;
     hasAnswered = true;
 
     state.stats.total++;
-    const isCorrect = selectedIndex === currentProgressionIndex;
+    const correctProgression = chordProgressions[currentProgressionIndex];
+    const isCorrect = JSON.stringify(currentUserAnswer) === JSON.stringify(correctProgression.chords);
+
     const feedbackEl = document.getElementById('feedback-display');
+    const answerContainer = document.getElementById('answer-display-container');
 
     if (isCorrect) {
         state.stats.correct++;
-        btnElement.classList.replace('btn-outline-primary', 'btn-success-custom');
         feedbackEl.textContent = 'Correct!';
         feedbackEl.className = 'h4 fw-bold text-success';
+        answerContainer.classList.add('border-success', 'border-3');
     } else {
-        btnElement.classList.replace('btn-outline-primary', 'btn-danger-custom');
-        feedbackEl.textContent = 'Incorrect';
+        feedbackEl.innerHTML = `Incorrect. The correct progression was: <br><strong>${correctProgression.name}</strong> (${correctProgression.chords.join(' - ')})`;
         feedbackEl.className = 'h4 fw-bold text-danger';
-
-        const buttons = document.querySelectorAll('.progression-btn');
-        state.selectedProgressions.forEach((idx, i) => {
-            if (idx === currentProgressionIndex) {
-                buttons[i].classList.replace('btn-outline-primary', 'btn-success-custom');
-            }
-        });
+        answerContainer.classList.add('border-danger', 'border-3');
     }
 
     saveState();
     renderStats();
     document.getElementById('next-btn').disabled = false;
+    document.getElementById('submit-answer-btn').disabled = true;
 }
 
 function renderSettingsView() {
@@ -619,6 +710,7 @@ function renderSettingsView() {
     document.getElementById('drum-volume-slider').value = state.settings.drumVolume;
     document.getElementById('tempo-slider').value = state.settings.tempo;
     document.getElementById('tempo-value').textContent = state.settings.tempo;
+    document.getElementById('answer-mode-select').value = state.settings.answerMode;
 
     const list = document.getElementById('progressions-list');
     list.innerHTML = '';
@@ -679,6 +771,22 @@ document.addEventListener('DOMContentLoaded', () => {
         startNewExercise();
     };
 
+    document.getElementById('clear-answer-btn').onclick = () => {
+        if (hasAnswered) return;
+        currentUserAnswer = [];
+        renderCurrentAnswer();
+    };
+
+    document.getElementById('undo-answer-btn').onclick = () => {
+        if (hasAnswered) return;
+        if (currentUserAnswer.length > 0) {
+            currentUserAnswer.pop();
+            renderCurrentAnswer();
+        }
+    };
+
+    document.getElementById('submit-answer-btn').onclick = handleSubmitAnswer;
+
     document.getElementById('reset-stats').onclick = (e) => {
         e.preventDefault();
         state.stats = { correct: 0, total: 0 };
@@ -703,6 +811,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('improv-checkbox').onchange = (e) => {
         state.settings.improv = e.target.checked;
+        saveState();
+    };
+
+    document.getElementById('answer-mode-select').onchange = (e) => {
+        state.settings.answerMode = e.target.value;
         saveState();
     };
 

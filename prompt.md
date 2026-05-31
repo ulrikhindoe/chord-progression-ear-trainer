@@ -71,15 +71,34 @@ There are two views in the app: Training and Settings. When the app is started t
   - When a chord is played the corresponding button is highlighted
   - When pressing a chord button the chord progression is stopped and the related chord is played as long the button is pressed
 - Progression choice section
-  - There is a button for each of the progression in the exercise
-  - User clicks the button they think matches the progression played.
-  - While long-pressing a progression button, the chord progression for that button is played. When the button is released, playback stops, and the user can continue with the current exercise.
-  - The width of the button should be adjusted to fit the text in the button
-  - If the correct progression is pressed the button will turn green
-  - If an incorrect progression is pressed the button will turn red and the correct progression will turn green
-  - The order of the progression buttons must be the same as in `spec-data.md`.
-  - Green and red buttons will return to the normal color when the Next button is pressed
-  - Under the buttons provide immediate visual feedback (Correct/Incorrect).
+  - The UI for this section depends on the "Answer Input Mode" setting.
+
+  - **Mode 1: Progression Buttons (Default)**
+    - There is a button for each of the progression in the exercise.
+    - User clicks the button they think matches the progression played.
+    - While long-pressing a progression button, the chord progression for that button is played. When the button is released, playback stops, and the user can continue with the current exercise.
+    - The width of the button should be adjusted to fit the text in the button.
+    - If the correct progression is pressed the button will turn green.
+    - If an incorrect progression is pressed the button will turn red and the correct progression will turn green.
+    - The order of the progression buttons must be the same as in `spec-data.md`.
+    - Green and red buttons will return to the normal color when the Next button is pressed.
+    - Under the buttons provide immediate visual feedback (Correct/Incorrect).
+
+  - **Mode 2: Chord Palette**
+    - The user constructs the progression from individual chord symbols.
+    - **Answer Display**: An area that shows the sequence of chords the user has selected. Initially empty or showing a placeholder text.
+    - **Chord Palette**: A set of buttons for each unique chord symbol present in the currently selected set of progressions for the exercise (e.g., I, V, vi, IV, i, bVI, etc.).
+      - Clicking a chord button adds it to the user's answer sequence.
+    - **Answer Editing**:
+      - An "Undo" button removes the last chord from the answer sequence.
+      - A "Clear" button removes all chords from the answer sequence.
+    - **Submitting**:
+      - A "Submit Answer" button is present.
+      - The "Submit" button is disabled until the user's answer sequence has the same number of chords as the progression that was played.
+      - When the "Submit" button is pressed, the answer is checked.
+    - **Feedback**:
+      - If the answer is correct, the Answer Display area gets a green border, and "Correct!" is shown.
+      - If the answer is incorrect, the Answer Display area gets a red border, and the correct progression is shown (e.g., "Incorrect. The correct progression was: I - V - vi - IV").
 
 #### 3.2 Settings View
 - No section should have internal scrolling (the page should scroll naturally).
@@ -93,6 +112,7 @@ There are two views in the app: Training and Settings. When the app is started t
   - Add Bass Note
   - Bossa Nova Drum Rhythm
   - Improvised Voice
+  - **Answer Input Mode**: A dropdown to select between "Progression Buttons" (default) and "Chord Palette".
   - Chords Volume Slider
   - Improvised Voice Volume Slider
   - Drum Volume Slider
