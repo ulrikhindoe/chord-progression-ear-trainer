@@ -62,9 +62,10 @@ There are two views in the app: Training and Settings. When the app is started t
   - Button named "Stop" to stop the current progression.
     - The button is only shown if looping is selected.
   - Button named "Next" to proceed to the next progression
-    - Enabled after answering
-    - Disabled when it is pressed
-    - When pressed play the next progression immediately
+    - Enabled after answering, or if "Allow Skip" is enabled in settings.
+    - Disabled when it is pressed.
+    - If pressed before answering (skipped), it has no effect on the statistics.
+    - When pressed play the next progression immediately.
 - Chords section
   - There is a button for each chord in the progression labelled 1,2,3...
   - The buttons must be wide enough so they are easy to press
@@ -119,6 +120,7 @@ There are two views in the app: Training and Settings. When the app is started t
   - Add Bass Note
   - Bossa Nova Drum Rhythm
   - Improvised Voice
+  - Allow Skip
   - **Answer Input Mode**: A dropdown to select between "Progression Buttons" (default) and "Chord Palette".
   - Chords Volume Slider
   - Improvised Voice Volume Slider
