@@ -47,6 +47,7 @@ const defaultState = {
         bass: false,
         bossa: false,
         improv: false,
+        allowSkip: false,
         answerMode: 'buttons',
         chordsVolume: -2,
         improvVolume: -10,
@@ -142,6 +143,7 @@ function loadState() {
                 typeof parsed.settings.bass === 'boolean' &&
                 typeof parsed.settings.bossa === 'boolean' &&
                 typeof parsed.settings.improv === 'boolean' &&
+                typeof parsed.settings.allowSkip === 'boolean' &&
                 typeof parsed.settings.answerMode === 'string' &&
                 typeof parsed.settings.chordsVolume === 'number' &&
                 typeof parsed.settings.improvVolume === 'number' &&
@@ -667,7 +669,7 @@ function renderTrainingView() {
 
     document.getElementById('feedback-display').textContent = '';
     document.getElementById('feedback-display').className = 'h4 fw-bold';
-    document.getElementById('next-btn').disabled = true;
+    document.getElementById('next-btn').disabled = !state.settings.allowSkip;
     document.getElementById('stop-btn').style.display = state.settings.loop ? 'inline-block' : 'none';
 }
 
@@ -731,6 +733,7 @@ function renderSettingsView() {
     document.getElementById('bass-checkbox').checked = state.settings.bass;
     document.getElementById('bossa-checkbox').checked = state.settings.bossa;
     document.getElementById('improv-checkbox').checked = state.settings.improv;
+    document.getElementById('allow-skip-checkbox').checked = state.settings.allowSkip;
     document.getElementById('chords-volume-slider').value = state.settings.chordsVolume;
     document.getElementById('improv-volume-slider').value = state.settings.improvVolume;
     document.getElementById('drum-volume-slider').value = state.settings.drumVolume;
@@ -837,6 +840,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('improv-checkbox').onchange = (e) => {
         state.settings.improv = e.target.checked;
+        saveState();
+    };
+
+    document.getElementById('allow-skip-checkbox').onchange = (e) => {
+        state.settings.allowSkip = e.target.checked;
         saveState();
     };
 
